@@ -57,6 +57,8 @@
                     <arguments>
                         <argument>-cp</argument>
                         <classpath/>
+                        <argument>-Dgraal.PrintGraph=Network</argument>
+                        <argument>-Dgraal.Dump=Truffle:1</argument>
                         <argument>${mainClass}</argument>
                         <argument>${heap}</argument>
                     </arguments>

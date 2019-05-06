@@ -18,19 +18,12 @@
  */
 package org.apidesign.demo.heapdump;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.Value;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
 import org.netbeans.lib.profiler.heap.Heap;
@@ -67,16 +60,8 @@ public class MainTest {
     public void testMain() throws Exception {
         File heapFile = sampleHprofFile(getClass());
         Heap heap = HeapFactory.createHeap(heapFile);
-
-        PrintStream prev = System.out;
-        try {
-            ByteArrayOutputStream bs = new ByteArrayOutputStream();
-            System.setOut(new PrintStream(bs));
-            Main.queryHeap(heap, 1);
-            assertEquals("Found 4 long int arrays\n", bs.toString(StandardCharsets.UTF_8));
-        } finally {
-            System.setOut(prev);
-        }
+        int res = Main.queryHeap(heap, 1);
+        assertEquals("Four large arrays", 4, res);
     }
 
 }
