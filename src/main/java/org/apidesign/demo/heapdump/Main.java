@@ -38,22 +38,29 @@ public class Main {
         queryHeap(heap, 20);
     }
 
-    static void queryHeap(Heap heap, int count) throws OQLException {
+    static int queryHeap(Heap heap, int count) throws OQLException {
+        int[] res = { -1 };
         final OQLEngine eng = new OQLEngine(heap);
         for (int i = 1; i <= count; i++) {
             long now = System.currentTimeMillis();
             eng.executeQuery(
-                    "var arr = [];\n" +
-                            "heap.forEachObject(function(o) {\n" +
-                            "  if (o.length > 255) {\n" +
-                            "    arr.push(o);\n" +
-                            "  }\n" +
-                            "}, 'int[]')\n" +
-                            "print('Found ' + arr.length + ' long int arrays');"
-                    , OQLEngine.ObjectVisitor.DEFAULT);
+                "var arr = [];\n" +
+                "heap.forEachObject(function(o) {\n" +
+                "  if (o.length > 255) {\n" +
+                "    arr.push(o);\n" +
+                "  }\n" +
+                "}, 'int[]')\n" +
+                "print('Found ' + arr.length + ' long int arrays');" +
+                "arr.length"
+                , (arrLength) -> {
+                    res[0] = (int) arrLength;
+                    return true;
+                }
+            );
             long took = System.currentTimeMillis() - now;
             System.err.println("Round #" + i + " took " + took + " ms");
         }
+        return res[0];
     }
 
     static {
