@@ -35,12 +35,12 @@ public class Main {
         System.err.println("Loading " + file);
         Heap heap = HeapFactory.createHeap(file);
         System.err.println("Querying the heap");
-        queryHeap(heap);
+        queryHeap(heap, 20);
     }
 
-    static void queryHeap(Heap heap) throws OQLException {
+    static void queryHeap(Heap heap, int count) throws OQLException {
         final OQLEngine eng = new OQLEngine(heap);
-        for (int i = 1; i <= 20; i++) {
+        for (int i = 1; i <= count; i++) {
             long now = System.currentTimeMillis();
             eng.executeQuery(
                     "var arr = [];\n" +
@@ -55,7 +55,7 @@ public class Main {
             System.err.println("Round #" + i + " took " + took + " ms");
         }
     }
-    
+
     static {
         System.setProperty("polyglot.js.nashorn-compat", "true");
     }
