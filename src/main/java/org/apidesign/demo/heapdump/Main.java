@@ -20,9 +20,13 @@ package org.apidesign.demo.heapdump;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.io.ByteSequence;
 import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.HeapFactory;
 import org.netbeans.modules.profiler.oql.engine.api.OQLEngine;
@@ -72,7 +76,8 @@ public class Main {
     static int analyzeHeap(File heapFile, int count) throws IOException {
         Context ctx = Context.newBuilder().build();
         System.err.println("Parsing the " + heapFile);
-        Source heapSrc = Source.newBuilder("heap", heapFile)
+        Source heapSrc = Source.newBuilder("heap", bytesOf(heapFile), heapFile.getName())
+                .uri(heapFile.toURI())
                 .mimeType("application/x-netbeans-profiler-hprof").build();
         Value heap = ctx.eval(heapSrc);
 
@@ -96,5 +101,27 @@ public class Main {
             System.err.println("Round #" + i + " took " + took + " ms");
         }
         return res.asInt();
+    }
+
+    private static ByteSequence bytesOf(File heapFile) throws IOException {
+        long length = heapFile.length();
+        try (RandomAccessFile file = new RandomAccessFile(heapFile, "r")) {
+            MappedByteBuffer out = file.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, length);
+            return new ByteSequence() {
+                @Override
+                public int length() {
+                    return (int) heapFile.length();
+                }
+
+                @Override
+                public byte byteAt(int index) {
+                    return out.get(index);
+                }
+            };
+        }
+    }
+
+    static {
+        System.setProperty("truffle.class.path.append", System.getProperty("java.class.path"));
     }
 }
