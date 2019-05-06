@@ -44,14 +44,11 @@ public class MainTest {
 
     @Test
     public void loadHeapDump() throws Exception {
-        Context ctx = Context.newBuilder().build();
-
         File heapFile = sampleHprofFile(getClass());
-        Source heapSrc = Source.newBuilder("heap", heapFile)
-                .mimeType("application/x-netbeans-profiler-hprof").build();
 
-        Value heap = ctx.eval(heapSrc);
-        assertFalse("Non null value", heap.isNull());
+        int count = Main.analyzeHeap(heapFile, 1);
+
+        assertEquals("Four long arrays in the heap", 4, count);
     }
 
     private static File sampleHprofFile(Class<?> type) throws IOException {

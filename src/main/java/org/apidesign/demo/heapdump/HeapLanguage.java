@@ -22,14 +22,24 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Iterator;
 import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.HeapFactory;
-import org.openide.util.Exceptions;
+import org.netbeans.lib.profiler.heap.JavaClass;
+import org.netbeans.lib.profiler.heap.PrimitiveArrayInstance;
 
 @TruffleLanguage.Registration(
     byteMimeTypes = "application/x-netbeans-profiler-hprof",
@@ -81,11 +91,82 @@ final class HeapRoot extends RootNode {
     }
 }
 
+@ExportLibrary(InteropLibrary.class)
 final class HeapObject implements TruffleObject {
     final Heap object;
 
     HeapObject(Heap object) {
         this.object = object;
+    }
+
+    @ExportMessage
+    static boolean hasMembers(HeapObject receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static boolean isMemberInvocable(HeapObject receiver, String member) {
+        return "forEachObject".equals(member);
+    }
+
+    @ExportMessage
+    static boolean getMembers(HeapObject receiver, boolean includeInternal) {
+        return true;
+    }
+
+    @ExportMessage
+    static Object invokeMember(
+        HeapObject receiver, String member, Object[] arguments,
+        @CachedLibrary(limit = "3") InteropLibrary callFn
+    ) throws UnknownIdentifierException {
+        if (!"forEachObject".equals(member)) {
+            throw UnknownIdentifierException.create(member);
+        }
+        TruffleObject fn = (TruffleObject) arguments[0];
+
+        String type = (String) arguments[1];
+        JavaClass classType = receiver.object.getJavaClassByName(type);
+
+        Iterator it = classType.getInstancesIterator();
+        while (it.hasNext()) {
+            Object obj = it.next();
+            PrimitiveArrayObject wrapper = new PrimitiveArrayObject((PrimitiveArrayInstance) obj);
+            try {
+                callFn.execute(fn, wrapper);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException ex) {
+                return HeapLanguage.raise(RuntimeException.class, ex);
+            }
+        }
+        return receiver;
+    }
+}
+
+@ExportLibrary(InteropLibrary.class)
+final class PrimitiveArrayObject implements TruffleObject {
+    final PrimitiveArrayInstance array;
+
+    PrimitiveArrayObject(PrimitiveArrayInstance array) {
+        this.array = array;
+    }
+
+    @ExportMessage
+    static boolean hasArrayElements(PrimitiveArrayObject receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static int getArraySize(PrimitiveArrayObject receiver) {
+        return receiver.array.getLength();
+    }
+
+    @ExportMessage
+    static Object readArrayElement(PrimitiveArrayObject receiver, long at) {
+        return null;
+    }
+
+    @ExportMessage
+    static boolean isArrayElementReadable(PrimitiveArrayObject receiver, long at) {
+        return true;
     }
 }
 

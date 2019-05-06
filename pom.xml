@@ -21,14 +21,21 @@
         <dependency>
             <groupId>org.graalvm.truffle</groupId>
             <artifactId>truffle-api</artifactId>
-            <version>1.0.0-rc16</version>
+            <version>${graalvm.version}</version>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.graalvm.truffle</groupId>
             <artifactId>truffle-dsl-processor</artifactId>
-            <version>1.0.0-rc16</version>
+            <version>${graalvm.version}</version>
             <scope>provided</scope>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.js</groupId>
+            <artifactId>js</artifactId>
+            <version>${graalvm.version}</version>
+            <scope>runtime</scope>
             <type>jar</type>
         </dependency>
     </dependencies>
@@ -37,6 +44,7 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <mainClass>org.apidesign.demo.heapdump.Main</mainClass>
+        <graalvm.version>1.0.0-rc16</graalvm.version>
     </properties>
     <build>
         <plugins>
