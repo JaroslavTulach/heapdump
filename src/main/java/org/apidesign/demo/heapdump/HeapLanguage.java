@@ -19,8 +19,11 @@
 package org.apidesign.demo.heapdump;
 
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -28,9 +31,11 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RepeatingNode;
 import com.oracle.truffle.api.nodes.RootNode;
 import java.io.File;
 import java.io.IOException;
@@ -115,29 +120,87 @@ final class HeapObject implements TruffleObject {
     }
 
     @ExportMessage
-    static Object invokeMember(
-        HeapObject receiver, String member, Object[] arguments,
-        @CachedLibrary(limit = "3") InteropLibrary callFn
-    ) throws UnknownIdentifierException {
-        if (!"forEachObject".equals(member)) {
-            throw UnknownIdentifierException.create(member);
-        }
-        TruffleObject fn = (TruffleObject) arguments[0];
-
-        String type = (String) arguments[1];
-        JavaClass classType = receiver.object.getJavaClassByName(type);
-
-        Iterator it = classType.getInstancesIterator();
-        while (it.hasNext()) {
-            Object obj = it.next();
-            PrimitiveArrayObject wrapper = new PrimitiveArrayObject((PrimitiveArrayInstance) obj);
-            try {
-                callFn.execute(fn, wrapper);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException ex) {
-                return HeapLanguage.raise(RuntimeException.class, ex);
+    static class InvokeMember {
+        @Specialization
+        static Object invokeMember(
+            HeapObject receiver, String member, Object[] arguments,
+            @Cached(value = "createLoopNode()") CallTarget callFn
+        ) throws UnknownIdentifierException {
+            if (!"forEachObject".equals(member)) {
+                throw UnknownIdentifierException.create(member);
             }
+            TruffleObject fn = (TruffleObject) arguments[0];
+
+            String type = (String) arguments[1];
+            JavaClass classType = receiver.object.getJavaClassByName(type);
+            Iterator it = classType.getInstancesIterator();
+
+            callFn.call(fn, new Object[1024], new int[1], new int[1], it);
+
+            return receiver;
         }
-        return receiver;
+        
+        static CallTarget getUncached() {
+            return null;
+        }
+    
+        static CallTarget createLoopNode() {
+            final class LoopArray extends Node implements RepeatingNode {
+
+                @Child
+                private InteropLibrary callFn = InteropLibrary.getFactory().createDispatched(3);
+
+                @Override
+                public boolean executeRepeating(VirtualFrame frame) {
+                    Object fn = frame.getArguments()[0];
+                    Object[] arr = (Object[]) frame.getArguments()[1];
+                    int[] len = (int[]) frame.getArguments()[2];
+                    int[] at = (int[]) frame.getArguments()[3];
+                    Iterator it = (Iterator) frame.getArguments()[4];
+
+                    if (at[0] < len[0]) {
+                        PrimitiveArrayObject wrapper = new PrimitiveArrayObject((PrimitiveArrayInstance) arr[at[0]++]);
+                        try {
+                            callFn.execute(fn, wrapper);
+                        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException ex) {
+                            throw HeapLanguage.raise(RuntimeException.class, ex);
+                        }
+                        return true;
+                    }
+                    len[0] = readObjects(arr, it);
+                    at[0] = 0;
+
+                    return len[0] > at[0];
+                }
+            }
+
+            final class LoopRoot extends RootNode {
+                LoopRoot() {
+                    super(null);
+                }
+
+                @Child
+                private LoopNode loop = Truffle.getRuntime().createLoopNode(new LoopArray());
+
+                @Override
+                public Object execute(VirtualFrame frame) {
+                    loop.executeLoop(frame);
+                    return null;
+                }
+            }
+            return Truffle.getRuntime().createCallTarget(new LoopRoot());
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        static int readObjects(Object[] arr, Iterator<?> it) {
+            for (int i = 0; i < arr.length; i++) {
+                if (!it.hasNext()) {
+                    return i;
+                }
+                arr[i] = it.next();
+            }
+            return arr.length;
+        }
     }
 }
 
