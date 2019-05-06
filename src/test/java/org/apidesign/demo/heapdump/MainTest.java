@@ -21,11 +21,16 @@ package org.apidesign.demo.heapdump;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
 import org.netbeans.lib.profiler.heap.Heap;
@@ -38,16 +43,32 @@ public class MainTest {
     }
 
     @Test
-    public void testMain() throws Exception {
+    public void loadHeapDump() throws Exception {
+        Context ctx = Context.newBuilder().build();
+
+        File heapFile = sampleHprofFile(getClass());
+        Source heapSrc = Source.newBuilder("heap", heapFile)
+                .mimeType("application/x-netbeans-profiler-hprof").build();
+
+        Value heap = ctx.eval(heapSrc);
+        assertFalse("Non null value", heap.isNull());
+    }
+
+    private static File sampleHprofFile(Class<?> type) throws IOException {
         File heapFile = File.createTempFile("sample", ".hprof");
         try (
-            InputStream is = getClass().getResourceAsStream("sample.hprof");
-            OutputStream os = new FileOutputStream(heapFile)
-        ) {
+                InputStream is = type.getResourceAsStream("sample.hprof");
+                OutputStream os = new FileOutputStream(heapFile)) {
             assertNotNull("Input stream", is);
             FileUtil.copy(is, os);
         }
+        return heapFile;
+    }
 
+
+    @Test
+    public void testMain() throws Exception {
+        File heapFile = sampleHprofFile(getClass());
         Heap heap = HeapFactory.createHeap(heapFile);
 
         PrintStream prev = System.out;

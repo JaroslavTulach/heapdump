@@ -32,6 +32,7 @@ public class Main {
         if (!file.exists()) {
             throw new IOException("Cannot find " + file);
         }
+        System.setProperty("polyglot.js.nashorn-compat", "true");
         System.err.println("Loading " + file);
         Heap heap = HeapFactory.createHeap(file);
         System.err.println("Querying the heap");
@@ -54,9 +55,5 @@ public class Main {
             long took = System.currentTimeMillis() - now;
             System.err.println("Round #" + i + " took " + took + " ms");
         }
-    }
-
-    static {
-        System.setProperty("polyglot.js.nashorn-compat", "true");
     }
 }
