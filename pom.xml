@@ -9,7 +9,7 @@
         <dependency>
             <groupId>org.netbeans.modules</groupId>
             <artifactId>org-netbeans-modules-profiler-oql</artifactId>
-            <version>RELEASE110</version>
+            <version>RELEASE111</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -45,7 +45,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <mainClass>org.apidesign.demo.heapdump.Main</mainClass>
         <dump>none</dump>
-        <graalvm.version>1.0.0-rc16</graalvm.version>
+        <graalvm.version>19.1.0</graalvm.version>
     </properties>
     <build>
         <plugins>
