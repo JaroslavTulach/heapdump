@@ -121,6 +121,17 @@ public class Main {
 
     private static String[] createHugeArrayFn() {
         return new String[] {
+            "ruby", ""
+            + "def hugeArrays(heap)\n"
+            + "  arr = []\n"
+            + "  heap.forEachObject(-> (o) { if o.size > 255 then arr.push(o); end }, 'int[]')\n"
+            + "  return arr.size\n"
+            + "end\n"
+            + "method(:hugeArrays)\n",
+            "fn.js"
+        };
+/*
+        return new String[] {
             "js",
             "(function(heap) {\n"
             + "var arr = [];\n"
