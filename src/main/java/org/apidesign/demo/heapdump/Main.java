@@ -81,16 +81,10 @@ public class Main {
                 .mimeType("application/x-netbeans-profiler-hprof").build();
         Value heap = ctx.eval(heapSrc);
 
-        final Source jsFnSrc = Source.newBuilder("js", "(function(heap) {\n" +
-                "var arr = [];\n" +
-                "heap.forEachObject(function(o) {\n" +
-                "  if (o.length > 255) {\n" +
-                "    arr.push(o);\n" +
-                "  }\n" +
-                "}, 'int[]')\n" +
-                "return arr.length;" +
-                "})", "fn.js").build();
-        Value fn = ctx.eval(jsFnSrc);
+        String[] langCodeExt = createHugeArrayFn();
+
+        final Source fnSrc = Source.newBuilder(langCodeExt[0], langCodeExt[1], langCodeExt[2]).build();
+        Value fn = ctx.eval(fnSrc);
 
         Value res = null;
         for (int i = 1; i <= count; i++) {
@@ -123,5 +117,34 @@ public class Main {
 
     static {
         System.setProperty("truffle.class.path.append", System.getProperty("java.class.path"));
+    }
+
+    private static String[] createHugeArrayFn() {
+        return new String[] {
+            "js",
+            "(function(heap) {\n"
+            + "var arr = [];\n"
+            + "heap.forEachObject(function(o) {\n"
+            + "  if (o.length > 255) {\n"
+            + "    arr.push(o);\n"
+            + "  }\n"
+            + "}, 'int[]')\n"
+            + "return arr.length;"
+            + "})",
+            "fn.js"
+        };
+/*
+        return new String[] {
+            "python",
+            "def hugeArrays(heap):\n"
+            + "  arr = []\n"
+            + "  heap.forEachObject(lambda o: arr.append(o) if len(o) > 255 else None, 'int[]')\n"
+            + "  return len(arr)\n"
+            + "\n"
+            + "hugeArrays\n"
+            + "",
+            "fn.py"
+        };
+*/
     }
 }
