@@ -39,8 +39,11 @@ public class Main {
         if (!file.exists()) {
             throw new IOException("Cannot find " + file);
         }
-        System.err.println("Analyzing the heap");
-        analyzeHeap(file, 20);
+
+        String language = (args.length > 1) ? args[1] : "js";
+
+        System.err.println("Analyzing the heap with " + language);
+        analyzeHeap(file, language, 20);
         System.setProperty("polyglot.js.nashorn-compat", "true");
         System.err.println("Loading " + file);
         Heap heap = HeapFactory.createHeap(file);
@@ -68,12 +71,12 @@ public class Main {
                 }
             );
             long took = System.currentTimeMillis() - now;
-            System.err.println("Round #" + i + " took " + took + " ms");
+            System.err.println("Round #" + i + " took " + took + " ms with Nashorn like wrapper");
         }
         return res[0];
     }
 
-    static int analyzeHeap(File heapFile, int count) throws IOException {
+    static int analyzeHeap(File heapFile, String language, int count) throws IOException {
         Context ctx = Context.newBuilder().build();
         System.err.println("Parsing the " + heapFile);
         Source heapSrc = Source.newBuilder("heap", bytesOf(heapFile), heapFile.getName())
@@ -81,7 +84,7 @@ public class Main {
                 .mimeType("application/x-netbeans-profiler-hprof").build();
         Value heap = ctx.eval(heapSrc);
 
-        String[] langCodeExt = createHugeArrayFn();
+        String[] langCodeExt = createHugeArrayFn(language);
 
         final Source fnSrc = Source.newBuilder(langCodeExt[0], langCodeExt[1], langCodeExt[2]).build();
         Value fn = ctx.eval(fnSrc);
@@ -92,7 +95,7 @@ public class Main {
             res = fn.execute(heap);
             long took = System.currentTimeMillis() - now;
             System.err.println("Found " + res.asInt() + " long int arrays");
-            System.err.println("Round #" + i + " took " + took + " ms");
+            System.err.println("Round #" + i + " took " + took + " ms with " + language);
         }
         return res.asInt();
     }
@@ -119,43 +122,47 @@ public class Main {
         System.setProperty("truffle.class.path.append", System.getProperty("java.class.path"));
     }
 
-    private static String[] createHugeArrayFn() {
-        return new String[] {
-            "ruby", ""
-            + "def hugeArrays(heap)\n"
-            + "  arr = []\n"
-            + "  heap.forEachObject(-> (o) { if o.size > 255 then arr.push(o); end }, 'int[]')\n"
-            + "  return arr.size\n"
-            + "end\n"
-            + "method(:hugeArrays)\n",
-            "fn.js"
-        };
-/*
-        return new String[] {
-            "js",
-            "(function(heap) {\n"
-            + "var arr = [];\n"
-            + "heap.forEachObject(function(o) {\n"
-            + "  if (o.length > 255) {\n"
-            + "    arr.push(o);\n"
-            + "  }\n"
-            + "}, 'int[]')\n"
-            + "return arr.length;"
-            + "})",
-            "fn.js"
-        };
-/*
-        return new String[] {
-            "python",
-            "def hugeArrays(heap):\n"
-            + "  arr = []\n"
-            + "  heap.forEachObject(lambda o: arr.append(o) if len(o) > 255 else None, 'int[]')\n"
-            + "  return len(arr)\n"
-            + "\n"
-            + "hugeArrays\n"
-            + "",
-            "fn.py"
-        };
-*/
+    private static String[] createHugeArrayFn(String language) {
+        switch (language) {
+            case "ruby":
+                return new String[] {
+                    "ruby", ""
+                    + "def hugeArrays(heap)\n"
+                    + "  arr = []\n"
+                    + "  heap.forEachObject(-> (o) { if o.size > 255 then arr.push(o); end }, 'int[]')\n"
+                    + "  return arr.size\n"
+                    + "end\n"
+                    + "method(:hugeArrays)\n",
+                    "fn.js"
+                };
+            case "js":
+                return new String[] {
+                    "js",
+                    "(function(heap) {\n"
+                    + "var arr = [];\n"
+                    + "heap.forEachObject(function(o) {\n"
+                    + "  if (o.length > 255) {\n"
+                    + "    arr.push(o);\n"
+                    + "  }\n"
+                    + "}, 'int[]')\n"
+                    + "return arr.length;"
+                    + "})",
+                    "fn.js"
+                };
+            case "python":
+                return new String[] {
+                    "python",
+                    "def hugeArrays(heap):\n"
+                    + "  arr = []\n"
+                    + "  heap.forEachObject(lambda o: arr.append(o) if len(o) > 255 else None, 'int[]')\n"
+                    + "  return len(arr)\n"
+                    + "\n"
+                    + "hugeArrays\n"
+                    + "",
+                    "fn.py"
+                };
+            default:
+                throw new IllegalStateException("Unknown language: " + language);
+        }
     }
 }

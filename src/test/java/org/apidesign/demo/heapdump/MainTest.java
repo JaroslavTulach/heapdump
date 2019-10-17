@@ -23,8 +23,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Map;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Language;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
 import org.junit.Test;
 import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.HeapFactory;
@@ -36,10 +40,30 @@ public class MainTest {
     }
 
     @Test
-    public void loadHeapDump() throws Exception {
+    public void loadHeapJavaScriptDump() throws Exception {
         File heapFile = sampleHprofFile(getClass());
 
-        int count = Main.analyzeHeap(heapFile, 1);
+        int count = Main.analyzeHeap(heapFile, "js", 1);
+
+        assertEquals("Four long arrays in the heap", 4, count);
+    }
+
+    @Test
+    public void loadHeapPythonDump() throws Exception {
+        assumeLanguage("python");
+        File heapFile = sampleHprofFile(getClass());
+
+        int count = Main.analyzeHeap(heapFile, "python", 1);
+
+        assertEquals("Four long arrays in the heap", 4, count);
+    }
+
+    @Test
+    public void loadHeapRubyDump() throws Exception {
+        assumeLanguage("ruby");
+        File heapFile = sampleHprofFile(getClass());
+
+        int count = Main.analyzeHeap(heapFile, "ruby", 1);
 
         assertEquals("Four long arrays in the heap", 4, count);
     }
@@ -64,4 +88,8 @@ public class MainTest {
         assertEquals("Four large arrays", 4, res);
     }
 
+    private static void assumeLanguage(String language) {
+        Map<String, Language> all = Context.create().getEngine().getLanguages();
+        assumeTrue("Language " + language + " must be supported: " + all.keySet(), all.containsKey(language));
+    }
 }
