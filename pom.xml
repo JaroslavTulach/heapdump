@@ -45,6 +45,8 @@
         <maven.compiler.target>8</maven.compiler.target>
         <mainClass>org.apidesign.demo.heapdump.Main</mainClass>
         <dump>none</dump>
+        <heap>dump.hprof</heap>
+        <debug>-Dnone</debug>
         <lang>js</lang>
         <graalvm.version>19.1.0</graalvm.version>
     </properties>
@@ -57,6 +59,7 @@
                 <configuration>
                     <executable>${java.home}/bin/java</executable>
                     <arguments>
+                        <argument>${debug}</argument>
                         <argument>-cp</argument>
                         <classpath/>
                         <argument>-D${dump}.PrintGraph=Network</argument>
