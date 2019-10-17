@@ -35,7 +35,7 @@
             <groupId>org.graalvm.js</groupId>
             <artifactId>js</artifactId>
             <version>${graalvm.version}</version>
-            <scope>runtime</scope>
+            <scope>test</scope>
             <type>jar</type>
         </dependency>
     </dependencies>

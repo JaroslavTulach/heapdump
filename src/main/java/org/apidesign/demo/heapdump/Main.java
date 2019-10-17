@@ -83,6 +83,11 @@ public class Main {
 
     static int analyzeHeap(File heapFile, String language, int count) throws IOException {
         Context ctx = Context.newBuilder().build();
+        if (!ctx.getEngine().getLanguages().containsKey(language)) {
+            System.err.println("No support for " + language + " skipping");
+            return -1;
+        }
+
         System.err.println("Parsing the " + heapFile);
         Source heapSrc = Source.newBuilder("heap", bytesOf(heapFile), heapFile.getName())
                 .uri(heapFile.toURI())
