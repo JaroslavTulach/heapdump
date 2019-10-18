@@ -25,6 +25,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <mainClass>org.apidesign.demo.heapdump.Main</mainClass>
         <netbeans.compile.on.save>none</netbeans.compile.on.save>
+        <debug>-Dnone</debug>
     </properties>
     <build>
         <plugins>
@@ -35,6 +36,7 @@
                 <configuration>
                     <executable>${java.home}/bin/java</executable>
                     <arguments>
+                        <argument>${debug}</argument>
                         <argument>-cp</argument>
                         <classpath/>
                         <argument>${mainClass}</argument>
