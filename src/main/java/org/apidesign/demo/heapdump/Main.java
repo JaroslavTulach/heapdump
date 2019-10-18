@@ -28,9 +28,14 @@ import org.netbeans.modules.profiler.oql.engine.api.OQLException;
 public class Main {
     public static void main(String... args) throws Exception {
         String fileName = args.length > 0 ? args[0] : "dump.hprof";
-        final File file = new File(fileName);
+        File file = new File(fileName);
         if (!file.exists()) {
-            throw new IOException("Cannot find " + file);
+            File homeFile = new File(System.getProperty("user.home"), fileName);
+            if (homeFile.exists()) {
+                file = homeFile;
+            } else {
+                throw new IOException("Cannot find " + file + " specify as mvn exec:exec -Dheap=path_to_heap_dump");
+            }
         }
         System.err.println("Loading " + file);
         Heap heap = HeapFactory.createHeap(file);
