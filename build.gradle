@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation 'org.graalvm.truffle:truffle-api:20.0.0'
+    implementation 'org.graalvm.truffle:truffle-dsl-processor:20.0.0'
+
+    testImplementation 'junit:junit:4.12'
+}
