@@ -1,5 +1,9 @@
 plugins {
     id 'java-library'
+    id "com.github.johnrengelman.shadow" version "5.2.0"    // build a jar of heap language with all dependencies
+
+    // Jacoco only works on Hotspot, not on Graal...
+    id 'jacoco'
 }
 
 repositories {
@@ -7,8 +11,29 @@ repositories {
 }
 
 dependencies {
+    // JS support in non-Graal VMs
+    implementation 'org.graalvm.js:js:20.0.0'
+    // Truffle language API
     implementation 'org.graalvm.truffle:truffle-api:20.0.0'
+    // Annotation processor to generate language implementation
     implementation 'org.graalvm.truffle:truffle-dsl-processor:20.0.0'
+    annotationProcessor 'org.graalvm.truffle:truffle-dsl-processor:20.0.0'
+    // Heap analysis library from Netbeans
+    implementation 'org.netbeans.modules:org-netbeans-modules-profiler-oql:RELEASE113'
 
     testImplementation 'junit:junit:4.12'
+}
+
+// To test the language, we need to have a fat jar available
+test.dependsOn shadowJar
+
+test {
+    // Tell Graal to add heap language into our language classpath.
+    jvmArgs "-Dtruffle.class.path.append=build/libs/heap-language-all.jar"
+}
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed", "standardError" //, "standardOut"
+    }
 }
