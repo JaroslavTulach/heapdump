@@ -31,3 +31,5 @@ build
 # Project files
 .idea
 *.iml
+
+.DS_Store
