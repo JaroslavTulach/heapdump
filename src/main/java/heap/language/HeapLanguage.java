@@ -12,8 +12,6 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
-import heap.language.functions.ClassOf;
-import heap.language.functions.Length;
 import heap.language.util.Descriptors;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
@@ -144,7 +142,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         // Export global symbols into polyglot bindings, if allowed
         if (env.isPolyglotBindingsAccessAllowed()) {
             for (Map.Entry<String, TruffleObject> entry : Globals.INSTANCES.entrySet()) {
-                env.exportSymbol("Heap_" + entry.getKey(), entry.getValue());
+                env.exportSymbol("Heap." + entry.getKey(), entry.getValue());
             }
         }
         // Set default script language to JavaScript if JavaScript is available and if polyglot eval is allowed
@@ -267,11 +265,11 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final Map<String, TruffleObject> INSTANCES = new HashMap<>();
 
         static {
-            INSTANCES.put(CLASS_OF, ClassOf.INSTANCE);
-            INSTANCES.put(LENGTH, Length.INSTANCE);
+            INSTANCES.put(CLASS_OF, OQLGlobalSymbols.ClassOf.INSTANCE);
+            INSTANCES.put(LENGTH, OQLGlobalSymbols.Length.INSTANCE);
 
-            INSTANCES.put(SET_SCRIPT_LANGUAGE, SetScriptLanguage.INSTANCE);
-            INSTANCES.put(BIND_GLOBAL_SYMBOLS, BindGlobalSymbols.INSTANCE);
+            INSTANCES.put(SET_SCRIPT_LANGUAGE, CustomGlobalSymbols.SetScriptLanguage.INSTANCE);
+            INSTANCES.put(BIND_GLOBAL_SYMBOLS, CustomGlobalSymbols.BindGlobalSymbols.INSTANCE);
         }
 
         @ExportMessage

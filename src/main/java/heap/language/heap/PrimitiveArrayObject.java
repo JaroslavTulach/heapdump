@@ -5,6 +5,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import heap.language.util.InstanceWrapper;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.lib.profiler.heap.JavaClass;
 import org.netbeans.lib.profiler.heap.PrimitiveArrayInstance;
@@ -15,22 +16,15 @@ import java.util.List;
  * Primitive array instances are effectively string arrays from interop perspective.
  */
 @ExportLibrary(InteropLibrary.class)
-public class PrimitiveArrayObject implements TruffleObject {
-
-    @NonNull
-    private final PrimitiveArrayInstance instance;
+public class PrimitiveArrayObject extends InstanceWrapper<PrimitiveArrayInstance> implements TruffleObject {
 
     @NonNull
     private final List<String> primitiveArray;  // underlying implementation is (supposedly) lazy
 
     public PrimitiveArrayObject(@NonNull PrimitiveArrayInstance instance) {
-        this.instance = instance;
+        super(instance);
         //noinspection unchecked
         this.primitiveArray = (List<String>) instance.getValues();
-    }
-
-    public JavaClass getJavaClass() {
-        return this.instance.getJavaClass();
     }
 
     public int getLength() {

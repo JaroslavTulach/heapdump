@@ -1,9 +1,6 @@
 package heap.language;
 
-import heap.language.functions.ClassOf;
-import heap.language.functions.Length;
 import heap.language.util.HeapLanguageUtils;
-import heap.language.util.VisitorObject;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.Source;
@@ -25,7 +22,7 @@ public class OQLEngineImpl {
         ctx.initialize("js");
 
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.SET_SCRIPT_LANGUAGE).execute("js");
-        ctx.eval("js", "Polyglot.import('Heap_bindGlobalSymbols')(this)");
+        ctx.eval("js", "Polyglot.import('Heap.bindGlobalSymbols')(this)");
         // Should be the same as
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.BIND_GLOBAL_SYMBOLS).execute(ctx.getBindings("js"));
 

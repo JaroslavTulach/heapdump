@@ -6,6 +6,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import heap.language.util.Descriptors;
 import heap.language.util.HeapLanguageUtils;
+import heap.language.util.InstanceWrapper;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.lib.profiler.heap.FieldValue;
 import org.netbeans.lib.profiler.heap.Instance;
@@ -18,16 +19,13 @@ import java.util.List;
  * of the instance object as if it were its own fields.
  */
 @ExportLibrary(InteropLibrary.class)
-public class InstanceObject implements TruffleObject {
-
-    @NonNull
-    private final Instance instance;
+public class InstanceObject extends InstanceWrapper<Instance> implements TruffleObject {
 
     @NonNull
     private final Descriptors members;
 
     public InstanceObject(@NonNull Instance instance) {
-        this.instance = instance;
+        super(instance);
         //noinspection unchecked
         List<FieldValue> fieldValues = (List<FieldValue>) instance.getFieldValues();
         String[] members = new String[fieldValues.size()];
@@ -36,10 +34,6 @@ public class InstanceObject implements TruffleObject {
             members[i] = value.getField().getName();
         }
         this.members = Descriptors.build(members, null);
-    }
-
-    public JavaClass getJavaClass() {
-        return this.instance.getJavaClass();
     }
 
     @NonNull

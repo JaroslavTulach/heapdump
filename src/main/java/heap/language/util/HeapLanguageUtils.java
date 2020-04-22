@@ -2,6 +2,7 @@ package heap.language.util;
 
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import heap.language.HeapLanguage;
 import heap.language.heap.*;
 import org.graalvm.polyglot.Value;
@@ -44,6 +45,19 @@ public class HeapLanguageUtils {
         if (arguments.length != expected) {
             throw ArityException.create(expected, arguments.length);
         }
+    }
+
+    public static <T> T unwrapArgument(Object[] arguments, int argIndex, Class<T> clazz) throws UnsupportedTypeException {
+        if (argIndex < 0) {
+            throw new IllegalArgumentException("Functions can't have negative arguments. Argument index: "+argIndex);
+        }
+        if (argIndex < arguments.length) {
+            Object arg = arguments[argIndex];
+            if (clazz.isInstance(arg)) {
+                return clazz.cast(arg);
+            }
+        }
+        throw UnsupportedTypeException.create(arguments, String.format("Expected %s as argument %d.", clazz.getSimpleName(), argIndex+1));
     }
 
     /**
