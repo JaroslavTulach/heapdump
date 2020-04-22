@@ -2,9 +2,7 @@ package heap.language;
 
 import heap.language.functions.ClassOf;
 import heap.language.util.HeapLanguageUtils;
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.*;
 import org.junit.Before;
 
 import java.io.File;
@@ -19,15 +17,22 @@ public abstract class HeapLanguageTest {
 
     @Before
     public void init() throws URISyntaxException, IOException {
+        this.ctx = Context.newBuilder()
+                .allowAllAccess(true)
+                .build();
+        ctx.initialize("heap");
+        ctx.getBindings("heap").getMember(HeapLanguage.Globals.SET_SCRIPT_LANGUAGE).execute("js");
+        ctx.getBindings("heap").getMember(HeapLanguage.Globals.BIND_GLOBAL_SYMBOLS).execute(ctx.getBindings("js"));
+        // TODO: Test that these are properly exported into polyglot bindings (or not when disabled)
+
         URL url = getClass().getClassLoader().getResource("heap/language/small_heap.bin");
         File heapFile = new File(url.toURI());
-        this.ctx = Context.newBuilder().build();
         Source heapSrc = Source.newBuilder("heap", HeapLanguageUtils.bytesOf(heapFile), heapFile.getName())
                 .uri(heapFile.toURI())
                 .mimeType("application/x-netbeans-profiler-hprof").build();
         this.heap = this.ctx.eval(heapSrc);
         ctx.getBindings("js").putMember("heap", this.heap);
-        ctx.getBindings("js").putMember("classof", ClassOf.INSTANCE);
+        //ctx.getBindings("js").putMember("classof", ctx.getPolyglotBindings().getMember("classof"));
         initJS();
     }
 

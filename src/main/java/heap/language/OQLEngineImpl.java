@@ -21,12 +21,18 @@ public class OQLEngineImpl {
 
     public OQLEngineImpl(File heapFile) throws IOException {
         this.ctx = Context.newBuilder().allowAllAccess(true).allowPolyglotAccess(PolyglotAccess.ALL).build();
+        ctx.initialize("heap");
+        ctx.initialize("js");
+
+        ctx.getBindings("heap").getMember(HeapLanguage.Globals.SET_SCRIPT_LANGUAGE).execute("js");
+        ctx.eval("js", "Polyglot.import('Heap_bindGlobalSymbols')(this)");
+        // Should be the same as
+        ctx.getBindings("heap").getMember(HeapLanguage.Globals.BIND_GLOBAL_SYMBOLS).execute(ctx.getBindings("js"));
+
         Source heapSrc = Source.newBuilder("heap", HeapLanguageUtils.bytesOf(heapFile), heapFile.getName())
                 .uri(heapFile.toURI())
                 .mimeType("application/x-netbeans-profiler-hprof").build();
         Value heap = this.ctx.eval(heapSrc);
-        ctx.getBindings("js").putMember("classof", ClassOf.INSTANCE);
-        ctx.getBindings("js").putMember("length", Length.INSTANCE);
         ctx.getBindings("js").putMember("heap", heap);
     }
 
@@ -42,7 +48,7 @@ public class OQLEngineImpl {
             return;
         }
         visitor = (visitor == null) ? OQLEngine.ObjectVisitor.DEFAULT : visitor;
-        ctx.getBindings("js").putMember("visitor", new VisitorObject(visitor));
+        ctx.getBindings("js").putMember("visitor", visitor);
         System.out.println("Query:"+parsed.buildJS());
         Source querySrc = Source.newBuilder("js", parsed.buildJS(), "fn.js").build();
         Value result = ctx.eval(querySrc);

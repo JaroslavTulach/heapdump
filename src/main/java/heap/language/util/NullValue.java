@@ -7,14 +7,14 @@ import com.oracle.truffle.api.library.ExportMessage;
 
 /** A simple object representing null (since we can't safely return actual null from interop methods). */
 @ExportLibrary(InteropLibrary.class)
-public class NullObject implements TruffleObject {
+public class NullValue implements TruffleObject {
 
-    public static final NullObject INSTANCE = new NullObject();
+    public static final NullValue INSTANCE = new NullValue();
 
-    private NullObject() { }
+    private NullValue() { }
 
     @ExportMessage
-    public static boolean isNull(@SuppressWarnings("unused") NullObject receiver) {
+    public static boolean isNull(@SuppressWarnings("unused") NullValue receiver) {
         return true;
     }
 

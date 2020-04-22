@@ -1,12 +1,12 @@
-package heap.language.heap;
+package heap.language;
 
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.js.lang.JavaScriptLanguage;
-import heap.language.HeapLanguage;
+import heap.language.heap.IteratorWrapperObject;
+import heap.language.heap.JavaClassObject;
 import heap.language.util.Descriptors;
 import heap.language.util.FilterIterator;
 import heap.language.util.HeapLanguageUtils;
@@ -53,7 +53,7 @@ public class HeapObject implements TruffleObject {
             UnsupportedTypeException,
             UnsupportedMessageException
     {
-        HeapLanguage.arityCheck(1, arguments);
+        HeapLanguageUtils.arityCheck(1, arguments);
         TruffleObject callback = (TruffleObject) arguments[0];
 
         //noinspection unchecked
@@ -141,7 +141,7 @@ public class HeapObject implements TruffleObject {
 
     /* returns an enumeration of all Java classes */
     private Object invoke_classes(Object[] arguments) throws ArityException {
-        HeapLanguage.arityCheck(0, arguments);
+        HeapLanguageUtils.arityCheck(0, arguments);
         //noinspection unchecked
         return new IteratorWrapperObject(this.heap.getClasses());
     }
@@ -186,9 +186,7 @@ public class HeapObject implements TruffleObject {
                 }
                 filter = (TruffleObject) arg;
             } else if (arg instanceof String) { // Filter is a string expression
-                //Source filterSrc = Source.newBuilder("js", (String) arg, "query.js").build();
-                com.oracle.truffle.api.source.Source filterSrc = com.oracle.truffle.api.source.Source.newBuilder("js", (String) arg, "query.js").build();
-                CallTarget filterCall = JavaScriptLanguage.getCurrentEnv().parsePublic(filterSrc, "it");
+                CallTarget filterCall = HeapLanguage.parseArgumentExpression((String) arg, "it");
 
                 // TODO: Unite with callback method once we have a better option to call JS
                 //noinspection unchecked

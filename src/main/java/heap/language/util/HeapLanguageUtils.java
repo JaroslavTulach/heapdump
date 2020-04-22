@@ -51,7 +51,7 @@ public class HeapLanguageUtils {
      */
     public static Object heapToTruffle(Object heapObject) {
         if (heapObject == null) {
-            return NullObject.INSTANCE;
+            return NullValue.INSTANCE;
         } else if (isInteropValue(heapObject)) {
             return heapObject;
         } else if (heapObject instanceof PrimitiveArrayInstance) {
@@ -88,7 +88,7 @@ public class HeapLanguageUtils {
             return ((ObjectArrayObject) truffleObject).getInstance();
         } else if (truffleObject instanceof InstanceObject) {
             return ((InstanceObject) truffleObject).getInstance();
-        } else if (truffleObject instanceof NullObject) {
+        } else if (truffleObject instanceof NullValue) {
             return null;
         } else {
             return truffleObject;
