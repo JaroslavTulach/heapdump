@@ -51,16 +51,22 @@ public class OQLEngineImpl {
         Value result = ctx.eval(querySrc);
         if (result.hasMember("done") && result.canInvokeMember("next")) {   // result is an iterator!
             while (!result.getMember("done").as(Boolean.class)) {
-                visitor.visit(HeapLanguageUtils.truffleToHeap(result.invokeMember("next")));
+                if (visitor.visit(HeapLanguageUtils.truffleToHeap(result.invokeMember("next")))) {
+                    return;
+                }
             }
         } else if (result.hasArrayElements()) {    // result is an array
             int length = (int) result.getArraySize();
             for (int i=0; i < length; i++) {
-                visitor.visit(HeapLanguageUtils.truffleToHeap(result.getArrayElement(i)));
+                if (visitor.visit(HeapLanguageUtils.truffleToHeap(result.getArrayElement(i)))) {
+                    return;
+                }
             }
         } else if (parsed.getClassName() == null) { // result is just an object - but we return it only if this effectively "pureJS" query
             // TODO: This needs to be handled better - but how?
-            visitor.visit(HeapLanguageUtils.truffleToHeap(result));
+            if (visitor.visit(HeapLanguageUtils.truffleToHeap(result))) {
+                return;
+            };
         }
     }
 

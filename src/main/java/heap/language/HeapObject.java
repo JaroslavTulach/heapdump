@@ -31,7 +31,7 @@ public class HeapObject implements TruffleObject {
     private static final String FIND_CLASS = "findClass";
     private static final String FIND_OBJECT = "findObject";
     private static final String CLASSES = "classes";
-    private static final String OBJECTS = "heap";
+    private static final String OBJECTS = "objects";
     private static final String FINALIZABLES = "finalizables";
     private static final String LIVEPATHS = "livepaths";
     private static final String ROOTS = "roots";

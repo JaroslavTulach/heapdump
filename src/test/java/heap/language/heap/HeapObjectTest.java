@@ -47,19 +47,19 @@ public class HeapObjectTest extends HeapLanguageTest {
 
     @Test
     public void objects() {
-        assertEquals((Integer) 6, runJS("count(heap.heap('java.io.File'))").as(Integer.class));
-        assertEquals((Integer) 7, runJS("count(heap.heap('java.io.OutputStream', true))").as(Integer.class));
-        assertEquals((Integer) 0, runJS("count(heap.heap('java.io.OutputStream', false))").as(Integer.class));
+        assertEquals((Integer) 6, runJS("count(heap.objects('java.io.File'))").as(Integer.class));
+        assertEquals((Integer) 7, runJS("count(heap.objects('java.io.OutputStream', true))").as(Integer.class));
+        assertEquals((Integer) 0, runJS("count(heap.objects('java.io.OutputStream', false))").as(Integer.class));
         // Test filter expressions
-        assertEquals((Integer) 0, runJS("count(heap.heap('java.lang.String', false, 'false'))").as(Integer.class));
-        assertEquals((Integer) 295, runJS("count(heap.heap('java.lang.String', false, 'true'))").as(Integer.class));
-        assertEquals((Integer) 214, runJS("count(heap.heap('java.lang.String', false, 'it.value.length > 10'))").as(Integer.class));
-        assertEquals((Integer) 8, runJS("count(heap.heap('java.lang.String', false, 'it.value.length > 100'))").as(Integer.class));
+        assertEquals((Integer) 0, runJS("count(heap.objects('java.lang.String', false, 'false'))").as(Integer.class));
+        assertEquals((Integer) 295, runJS("count(heap.objects('java.lang.String', false, 'true'))").as(Integer.class));
+        assertEquals((Integer) 214, runJS("count(heap.objects('java.lang.String', false, 'it.value.length > 10'))").as(Integer.class));
+        assertEquals((Integer) 8, runJS("count(heap.objects('java.lang.String', false, 'it.value.length > 100'))").as(Integer.class));
         // The same filters, but as callbacks
-        assertEquals((Integer) 0, runJS("count(heap.heap('java.lang.String', false, function(s) { return false; }))").as(Integer.class));
-        assertEquals((Integer) 295, runJS("count(heap.heap('java.lang.String', false, function(s) { return true; }))").as(Integer.class));
-        assertEquals((Integer) 214, runJS("count(heap.heap('java.lang.String', false, function(s) { return s.value.length > 10; }))").as(Integer.class));
-        assertEquals((Integer) 8, runJS("count(heap.heap('java.lang.String', false, function(s) { return s.value.length > 100; }))").as(Integer.class));
+        assertEquals((Integer) 0, runJS("count(heap.objects('java.lang.String', false, function(s) { return false; }))").as(Integer.class));
+        assertEquals((Integer) 295, runJS("count(heap.objects('java.lang.String', false, function(s) { return true; }))").as(Integer.class));
+        assertEquals((Integer) 214, runJS("count(heap.objects('java.lang.String', false, function(s) { return s.value.length > 10; }))").as(Integer.class));
+        assertEquals((Integer) 8, runJS("count(heap.objects('java.lang.String', false, function(s) { return s.value.length > 100; }))").as(Integer.class));
     }
 
     @Test

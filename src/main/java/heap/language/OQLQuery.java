@@ -61,15 +61,15 @@ public class OQLQuery {
             // The query is "select `JS_expression` from `class_name` `identifier`
             // visitor is
             String selectFunction = "function __select__("+instanceName+") { return "+selectExpression+" };";
-            String iteratorConstruction = "let iterator = heap.heap('"+className+"', "+isInstanceOf+");";
+            String iteratorConstruction = "let iterator = heap.objects('"+className+"', "+isInstanceOf+");";
             String whereFunction;
             String resultsIterator;
             if (whereExpression == null) {
                 whereFunction = "";
-                resultsIterator = "while (!iterator.done) { let item = iterator.next(); visitor.visit(__select__(item)); };";
+                resultsIterator = "while (!iterator.done) { let item = iterator.next(); if (visitor.visit(__select__(item))) { break; }; };";
             } else {
                 whereFunction = "function __where__("+instanceName+") { return "+whereExpression+" };";
-                resultsIterator = "while (!iterator.done) { let item = iterator.next(); if(__where__(item)) { visitor.visit(__select__(item)) } };";
+                resultsIterator = "while (!iterator.done) { let item = iterator.next(); if(__where__(item)) { if (visitor.visit(__select__(item))) { break; } } };";
             }
             return "{" + selectFunction + whereFunction + iteratorConstruction + resultsIterator + "}";
         }

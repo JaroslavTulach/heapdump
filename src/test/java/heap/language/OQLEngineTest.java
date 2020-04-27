@@ -78,7 +78,7 @@ public class OQLEngineTest {
         assertTrue(rslt[0]);
     }
 
-    @Test @Ignore
+    @Test
     public void testClassFields() throws Exception {
         System.out.println("test class fields");
 
@@ -95,7 +95,7 @@ public class OQLEngineTest {
         assertEquals(values[1], values[0]);
     }
 
-    @Test @Ignore
+    @Test
     public void testObjectClass() throws Exception {
         System.out.println("test object class accessor");
 
@@ -217,14 +217,14 @@ public class OQLEngineTest {
 
         final int[] count = new int[]{0,0};
 
-        instance.executeQuery("select heap.heap(\"java.io.InputStream\", true)", new ObjectVisitor() {
+        instance.executeQuery("select heap.objects(\"java.io.InputStream\", true)", new ObjectVisitor() {
 
             public boolean visit(Object o) {
                 count[0]++;
                 return false;
             }
         });
-        instance.executeQuery("select heap.heap(\"java.io.InputStream\", false)", new ObjectVisitor() {
+        instance.executeQuery("select heap.objects(\"java.io.InputStream\", false)", new ObjectVisitor() {
 
             public boolean visit(Object o) {
                 count[1]++;
@@ -421,7 +421,7 @@ public class OQLEngineTest {
         assertEquals(2, counter[0]); // although there is 8 subclasses of ClassLoader only 2 of them have instances
     }
 
-    @Test @Ignore
+    @Test
     public void testSizeOf() throws Exception {
         System.out.println("sizeof");
         final int[] counter = new int[1];
@@ -471,7 +471,7 @@ public class OQLEngineTest {
         assertTrue(count[0] > 0);
     }
 
-    @Test @Ignore
+    @Test
     public void testMap() throws Exception {
         System.out.println("map");
 
@@ -600,7 +600,7 @@ public class OQLEngineTest {
         final Class[] rsltClass = new Class[1];
 //        final boolean sorted[] = new boolean[] {true};
 
-        instance.executeQuery("select { name: t.name? t.name.toString() : \"null\", thread: t }  from instanceof java.lang.Thread t", new ObjectVisitor() {
+        instance.executeQuery("select print(t.name); return { name: t.name? t.name.toString() : \"null\", thread: t };  from instanceof java.lang.Thread t", new ObjectVisitor() {
 
             public boolean visit(Object o) {
                 rsltClass[0] = o.getClass();
