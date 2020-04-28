@@ -257,6 +257,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final String SIZE_OF = "sizeof";
         public static final String CONCAT = "concat";
         public static final String CONTAINS = "contains";
+        public static final String COUNT = "count";
 
         // Extra symbols provided by us:
         public static final String SET_SCRIPT_LANGUAGE = "setScriptLanguage";
@@ -278,6 +279,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
             INSTANCES.put(CONTAINS, OQLGlobalSymbols.Contains.INSTANCE);
             INSTANCES.put(LENGTH, OQLGlobalSymbols.Length.INSTANCE);
             INSTANCES.put(MAP, OQLGlobalSymbols.Map.INSTANCE);
+            INSTANCES.put(COUNT, OQLGlobalSymbols.Count.INSTANCE);
 
             INSTANCES.put(SET_SCRIPT_LANGUAGE, CustomGlobalSymbols.SetScriptLanguage.INSTANCE);
             INSTANCES.put(BIND_GLOBAL_SYMBOLS, CustomGlobalSymbols.BindGlobalSymbols.INSTANCE);

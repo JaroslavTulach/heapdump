@@ -57,4 +57,11 @@ public class OQLGlobalSymbolsTest extends HeapLanguageTest {
         assertFalse(runJS("contains({ a: 'foo', b: 'goo' }, function(it, i) { return it == i; })").as(Boolean.class));
     }
 
+    @Test
+    public void testCount() {
+        assertEquals((Integer) 3, runJS("count([1,2,3])").as(Integer.class));
+        assertEquals((Integer) 2, runJS("count({ valA: 'foo', valB: 'foo2', extra: 4 }, \"index.startsWith('val')\")").as(Integer.class));
+        assertEquals((Integer) 3, runJS("count([3,2,4,1,5,0], function(it) { return it > 2; })").as(Integer.class));
+    }
+
 }

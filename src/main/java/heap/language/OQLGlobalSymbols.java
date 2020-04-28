@@ -219,7 +219,7 @@ interface OQLGlobalSymbols {
         private SizeOf() {}
 
         @ExportMessage
-        static boolean isExecutable(SizeOf receiver) {
+        static boolean isExecutable(@SuppressWarnings("unused") SizeOf receiver) {
             return true;
         }
 
@@ -311,6 +311,63 @@ interface OQLGlobalSymbols {
             }
 
             return Boolean.FALSE;
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    class Count implements TruffleObject {
+
+        public static final Count INSTANCE = new Count();
+
+        private Count() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Count receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(
+                @SuppressWarnings("unused") Count receiver,
+                Object[] arguments,
+                @CachedLibrary(limit = "3") InteropLibrary call
+        ) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+            if (arguments.length == 1) {
+                return Length.execute(null, arguments, call);
+            }
+            HeapLanguageUtils.arityCheck(2, arguments);
+            Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.iterateObject(arguments[0], call);
+            Object action = arguments[1];
+            int count = 0;
+            if (action instanceof String) {
+                CallTarget target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array");
+                while (it.hasMoreElements()) {
+                    Pair<Object, Object> el = it.nextElement();
+                    Object element = el.getRight();
+                    if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
+                        element = element.toString();
+                    }
+                    if ((Boolean) target.call(element, el.getLeft(), arguments[0])) {
+                        count += 1;
+                    }
+                }
+            } else if (call.isExecutable(action)) {
+                while (it.hasMoreElements()) {
+                    Pair<Object, Object> el = it.nextElement();
+                    Object element = el.getRight();
+                    if (element instanceof Character) {
+                        element = element.toString();
+                    }
+                    if ((Boolean) call.execute(action, element, el.getLeft(), arguments[0])) {
+                        count += 1;
+                    }
+                }
+            } else {
+                throw UnsupportedTypeException.create(arguments, "Expected callback or string expression as second argument.");
+            }
+
+            return count;
         }
 
     }
