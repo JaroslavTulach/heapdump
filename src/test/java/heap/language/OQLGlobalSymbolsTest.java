@@ -64,4 +64,10 @@ public class OQLGlobalSymbolsTest extends HeapLanguageTest {
         assertEquals((Integer) 3, runJS("count([3,2,4,1,5,0], function(it) { return it > 2; })").as(Integer.class));
     }
 
+    @Test
+    public void testFilter() {
+        assertEquals((Integer) 4, runJS("filter([0,1,4,2], 'it > 1')[0]").as(Integer.class));
+        assertEquals("value", runJS("filter({ a: 'a', b: 'b', c: 'value', d: 'test' }, function(it) { return it.length > 2; })[0]").as(String.class));
+    }
+
 }

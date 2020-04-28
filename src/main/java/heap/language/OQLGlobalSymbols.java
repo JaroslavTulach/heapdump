@@ -372,6 +372,59 @@ interface OQLGlobalSymbols {
 
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    class Filter implements TruffleObject {
+
+        public static final Filter INSTANCE = new Filter();
+
+        private Filter() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Filter receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(
+                @SuppressWarnings("unused") Filter receiver,
+                Object[] arguments,
+                @CachedLibrary(limit = "3") InteropLibrary call
+        ) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+            HeapLanguageUtils.arityCheck(2, arguments);
+            Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.iterateObject(arguments[0], call);
+            Object action = arguments[1];
+            ArrayList<Object> result = new ArrayList<>();
+            if (action instanceof String) {
+                CallTarget target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array", "result");
+                while (it.hasMoreElements()) {
+                    Pair<Object, Object> el = it.nextElement();
+                    Object element = el.getRight();
+                    if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
+                        element = element.toString();
+                    }
+                    if ((Boolean) target.call(element, el.getLeft(), arguments[0], HeapLanguage.asGuestValue(result))) {
+                        result.add(element);
+                    }
+                }
+            } else if (call.isExecutable(action)) {
+                while (it.hasMoreElements()) {
+                    Pair<Object, Object> el = it.nextElement();
+                    Object element = el.getRight();
+                    if (element instanceof Character) {
+                        element = element.toString();
+                    }
+                    if ((Boolean) call.execute(action, element, el.getLeft(), arguments[0], HeapLanguage.asGuestValue(result))) {
+                        result.add(element);
+                    }
+                }
+            } else {
+                throw UnsupportedTypeException.create(arguments, "Expected callback or string expression as second argument.");
+            }
+
+            return new ReadOnlyArray(result.toArray(new Object[0]));
+        }
+
+    }
 
 
 }
