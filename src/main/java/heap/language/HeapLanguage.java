@@ -255,13 +255,15 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final String MAP = "map";
         public static final String TO_HTML = "toHtml";
         public static final String SIZE_OF = "sizeof";
+        public static final String CONCAT = "concat";
+        public static final String CONTAINS = "contains";
 
         // Extra symbols provided by us:
         public static final String SET_SCRIPT_LANGUAGE = "setScriptLanguage";
         public static final String BIND_GLOBAL_SYMBOLS = "bindGlobalSymbols";
 
         private static final Descriptors MEMBERS = Descriptors.properties(
-                CLASS_OF, LENGTH, MAP, TO_HTML, SIZE_OF,
+                CLASS_OF, LENGTH, MAP, TO_HTML, SIZE_OF, CONCAT,
                 SET_SCRIPT_LANGUAGE, BIND_GLOBAL_SYMBOLS
         );
 
@@ -269,10 +271,13 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
 
         static {
             INSTANCES.put(CLASS_OF, OQLGlobalSymbols.ClassOf.INSTANCE);
+            INSTANCES.put(SIZE_OF, OQLGlobalSymbols.SizeOf.INSTANCE);
+            INSTANCES.put(TO_HTML, OQLGlobalSymbols.ToHtml.INSTANCE);
+
+            INSTANCES.put(CONCAT, OQLGlobalSymbols.Concat.INSTANCE);
+            INSTANCES.put(CONTAINS, OQLGlobalSymbols.Contains.INSTANCE);
             INSTANCES.put(LENGTH, OQLGlobalSymbols.Length.INSTANCE);
             INSTANCES.put(MAP, OQLGlobalSymbols.Map.INSTANCE);
-            INSTANCES.put(TO_HTML, OQLGlobalSymbols.ToHtml.INSTANCE);
-            INSTANCES.put(SIZE_OF, OQLGlobalSymbols.SizeOf.INSTANCE);
 
             INSTANCES.put(SET_SCRIPT_LANGUAGE, CustomGlobalSymbols.SetScriptLanguage.INSTANCE);
             INSTANCES.put(BIND_GLOBAL_SYMBOLS, CustomGlobalSymbols.BindGlobalSymbols.INSTANCE);

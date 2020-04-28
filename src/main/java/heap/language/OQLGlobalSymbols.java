@@ -68,7 +68,7 @@ interface OQLGlobalSymbols {
         ) throws ArityException {
             HeapLanguageUtils.arityCheck(1, arguments);
             // TODO: Fast lane for array-like objects...
-            Enumeration<Pair<Object, Object>> iterator = HeapLanguageUtils.makeIterator(arguments[0], call);
+            Enumeration<Pair<Object, Object>> iterator = HeapLanguageUtils.iterateObject(arguments[0], call);
             int count = 0;
             while (iterator.hasMoreElements()) {
                 count += 1;
@@ -99,7 +99,7 @@ interface OQLGlobalSymbols {
                 @CachedLibrary(limit = "3") InteropLibrary call
         ) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
             HeapLanguageUtils.arityCheck(2, arguments);
-            Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.makeIterator(arguments[0], call);
+            Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.iterateObject(arguments[0], call);
             Object action = arguments[1];
             ArrayList<Object> result = new ArrayList<>();
             if (action instanceof String) {
@@ -231,5 +231,90 @@ interface OQLGlobalSymbols {
         }
 
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    class Concat implements TruffleObject {
+
+        public static final Concat INSTANCE = new Concat();
+
+        private Concat() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Concat receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") Concat receiver, Object[] arguments, @CachedLibrary(limit = "3") InteropLibrary call) throws ArityException {
+            HeapLanguageUtils.arityCheck(2, arguments);
+            Enumeration<Pair<Object, Object>> it1 = HeapLanguageUtils.iterateObject(arguments[0], call);
+            Enumeration<Pair<Object, Object>> it2 = HeapLanguageUtils.iterateObject(arguments[1], call);
+            // TODO: Create lazy enumeration if both arguments are enumerations
+            ArrayList<Object> result = new ArrayList<>();
+            while (it1.hasMoreElements()) {
+                result.add(it1.nextElement().getRight());
+            }
+            while (it2.hasMoreElements()) {
+                result.add(it2.nextElement().getRight());
+            }
+            return new ReadOnlyArray(result.toArray(new Object[0]));
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    class Contains implements TruffleObject {
+
+        public static final Contains INSTANCE = new Contains();
+
+        private Contains() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Contains receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(
+                @SuppressWarnings("unused") Contains receiver,
+                Object[] arguments,
+                @CachedLibrary(limit = "3") InteropLibrary call
+        ) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+            HeapLanguageUtils.arityCheck(2, arguments);
+            Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.iterateObject(arguments[0], call);
+            Object action = arguments[1];
+            if (action instanceof String) {
+                CallTarget target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array");
+                while (it.hasMoreElements()) {
+                    Pair<Object, Object> el = it.nextElement();
+                    Object element = el.getRight();
+                    if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
+                        element = element.toString();
+                    }
+                    if ((Boolean) target.call(element, el.getLeft(), arguments[0])) {
+                        return Boolean.TRUE;
+                    }
+                }
+            } else if (call.isExecutable(action)) {
+                while (it.hasMoreElements()) {
+                    Pair<Object, Object> el = it.nextElement();
+                    Object element = el.getRight();
+                    if (element instanceof Character) {
+                        element = element.toString();
+                    }
+                    if ((Boolean) call.execute(action, element, el.getLeft(), arguments[0])) {
+                        return Boolean.TRUE;
+                    }
+                }
+            } else {
+                throw UnsupportedTypeException.create(arguments, "Expected callback or string expression as second argument.");
+            }
+
+            return Boolean.FALSE;
+        }
+
+    }
+
+
 
 }

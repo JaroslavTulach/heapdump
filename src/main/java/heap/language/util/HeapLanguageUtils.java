@@ -69,7 +69,7 @@ public class HeapLanguageUtils {
      * Construct a Java Enumeration from an arbitrary truffle object. The iterator yields a pair: index and the actual value.
      * Both values must be valid interop values.
      */
-    public static Enumeration<Pair<Object, Object>> makeIterator(Object object, InteropLibrary call) {
+    public static Enumeration<Pair<Object, Object>> iterateObject(Object object, InteropLibrary call) {
         if (object instanceof TruffleObject) {
             if (call.hasArrayElements(object)) {    // object is array-like - we can access it using indices
                 return new Enumeration<Pair<Object, Object>>() {

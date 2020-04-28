@@ -46,4 +46,15 @@ public class OQLGlobalSymbolsTest extends HeapLanguageTest {
         assertEquals((Character) ':', runJS("toHtml(':')").as(Character.class));
     }
 
+    @Test
+    public void testConcat() {
+        assertEquals("hello", runJS("concat({ a: 1, b: 2 }, ['hello', { foo: true }])[2]").as(String.class));
+    }
+
+    @Test
+    public void testContains() {
+        assertTrue(runJS("contains([0,1,2], 'it == 1')").as(Boolean.class));
+        assertFalse(runJS("contains({ a: 'foo', b: 'goo' }, function(it, i) { return it == i; })").as(Boolean.class));
+    }
+
 }
