@@ -8,6 +8,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import heap.language.heap.JavaClassObject;
 import heap.language.util.HeapLanguageUtils;
 import heap.language.util.InstanceWrapper;
+import heap.language.util.NullValue;
 import heap.language.util.ReadOnlyArray;
 import org.graalvm.collections.Pair;
 import org.netbeans.lib.profiler.heap.Instance;
@@ -426,5 +427,89 @@ interface OQLGlobalSymbols {
 
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    class Max implements TruffleObject {
+
+        public static final Max INSTANCE = new Max();
+
+        private Max() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Max receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(
+                @SuppressWarnings("unused") Max receiver,
+                Object[] arguments,
+                @CachedLibrary(limit = "3") InteropLibrary call
+        ) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+            Object max = null;
+            if (arguments.length == 1) {    // assume numeric comparison
+                HeapLanguageUtils.iterateObject(arguments[0], call);
+                Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.iterateObject(arguments[0], call);
+                while (it.hasMoreElements()) {
+                    Pair<Object, Object> el = it.nextElement();
+                    Object element = el.getRight();
+                    if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
+                        element = element.toString();
+                    }
+                    if (max == null) {
+                        max = element;
+                    } else if (element instanceof Comparable) {
+                        Comparable<Object> lhs = (Comparable<Object>) max;
+                        Comparable<Object> rhs = (Comparable<Object>) element;
+                        if (lhs.compareTo(rhs) < 0) {
+                            max = rhs;
+                        }
+                    } else {
+                        throw UnsupportedTypeException.create(arguments, "Array must contain comparable elements.");
+                    }
+                }
+            } else {
+                HeapLanguageUtils.arityCheck(2, arguments);
+                Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.iterateObject(arguments[0], call);
+                Object action = arguments[1];
+                if (action instanceof String) {
+                    CallTarget target = HeapLanguage.parseArgumentExpression((String) action, "lhs", "rhs");
+                    while (it.hasMoreElements()) {
+                        Pair<Object, Object> el = it.nextElement();
+                        Object element = el.getRight();
+                        if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
+                            element = element.toString();
+                        }
+                        if (max == null) {
+                            max = element;
+                        } else {
+                            if ((Boolean) target.call(element, max)) {  // true if lhs > rhs
+                                max = element;
+                            }
+                        }
+                    }
+                } else if (call.isExecutable(action)) {
+                    while (it.hasMoreElements()) {
+                        Pair<Object, Object> el = it.nextElement();
+                        Object element = el.getRight();
+                        if (element instanceof Character) {
+                            element = element.toString();
+                        }
+                        if ((Boolean) call.execute(element, max)) {
+                            max = element;
+                        }
+                    }
+                } else {
+                    throw UnsupportedTypeException.create(arguments, "Expected callback or string expression as second argument.");
+                }
+            }
+
+            if (max == null) {
+                return NullValue.INSTANCE;
+            } else {
+                return max;
+            }
+        }
+
+    }
 
 }

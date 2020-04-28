@@ -70,4 +70,10 @@ public class OQLGlobalSymbolsTest extends HeapLanguageTest {
         assertEquals("value", runJS("filter({ a: 'a', b: 'b', c: 'value', d: 'test' }, function(it) { return it.length > 2; })[0]").as(String.class));
     }
 
+    @Test
+    public void testMax() {
+        assertEquals((Integer) 4, runJS("max([0,3,1,4,-2,2])").as(Integer.class));
+        assertEquals("you", runJS("max(['hello', 'there', 'you', 'foo', 'value'], 'lhs.length < rhs.length')").as(String.class));
+    }
+
 }

@@ -259,6 +259,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final String CONTAINS = "contains";
         public static final String COUNT = "count";
         public static final String FILTER = "filter";
+        public static final String MAX = "max";
 
         // Extra symbols provided by us:
         public static final String SET_SCRIPT_LANGUAGE = "setScriptLanguage";
@@ -282,6 +283,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
             INSTANCES.put(FILTER, OQLGlobalSymbols.Filter.INSTANCE);
             INSTANCES.put(LENGTH, OQLGlobalSymbols.Length.INSTANCE);
             INSTANCES.put(MAP, OQLGlobalSymbols.Map.INSTANCE);
+            INSTANCES.put(MAX, OQLGlobalSymbols.Max.INSTANCE);
 
             INSTANCES.put(SET_SCRIPT_LANGUAGE, CustomGlobalSymbols.SetScriptLanguage.INSTANCE);
             INSTANCES.put(BIND_GLOBAL_SYMBOLS, CustomGlobalSymbols.BindGlobalSymbols.INSTANCE);
