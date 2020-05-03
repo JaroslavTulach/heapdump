@@ -126,6 +126,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
             );
         }
         Source source = Source.newBuilder(scriptLanguage, expression, "expression."+scriptLanguage).build();
+        // TODO: Substitute this for a TruffleObject that will also wrap unsupported primitive objects
         return state.getEnvironment().parsePublic(source, argNames);
     }
 

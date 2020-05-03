@@ -1,13 +1,13 @@
 package heap.language.heap;
 
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import heap.language.HeapLanguage;
+import heap.language.util.Descriptors;
+import heap.language.util.HeapLanguageUtils;
 import heap.language.util.InstanceWrapper;
 import org.netbeans.api.annotations.common.NonNull;
-import org.netbeans.lib.profiler.heap.JavaClass;
 import org.netbeans.lib.profiler.heap.PrimitiveArrayInstance;
 
 import java.util.List;
@@ -17,6 +17,10 @@ import java.util.List;
  */
 @ExportLibrary(InteropLibrary.class)
 public class PrimitiveArrayObject extends InstanceWrapper<PrimitiveArrayInstance> implements TruffleObject {
+
+    private static final Descriptors MEMBERS = Descriptors.build(new String[]{
+            InstanceObject.CLAZZ, InstanceObject.STATICS, InstanceObject.ID, InstanceObject.WRAPPED_OBJECT
+    }, new String[]{ InstanceObject.TO_STRING });
 
     @NonNull
     private final List<String> primitiveArray;  // underlying implementation is (supposedly) lazy
@@ -56,6 +60,53 @@ public class PrimitiveArrayObject extends InstanceWrapper<PrimitiveArrayInstance
             throw InvalidArrayIndexException.create(at);
         }
         return receiver.primitiveArray.get((int) at);
+    }
+
+    @ExportMessage
+    static boolean hasMembers(@SuppressWarnings("unused") PrimitiveArrayObject receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static Object getMembers(@SuppressWarnings("unused") PrimitiveArrayObject receiver, @SuppressWarnings("unused") boolean includeInternal) {
+        return MEMBERS;
+    }
+
+    @ExportMessage
+    static boolean isMemberReadable(@SuppressWarnings("unused") PrimitiveArrayObject receiver, String member) {
+        return MEMBERS.hasProperty(member);
+    }
+
+    @ExportMessage
+    static boolean isMemberInvocable(@SuppressWarnings("unused") PrimitiveArrayObject receiver, String member) {
+        return MEMBERS.hasFunction(member);
+    }
+
+    @ExportMessage
+    static Object invokeMember(PrimitiveArrayObject receiver, String member, Object[] arguments) throws ArityException, UnknownIdentifierException {
+        if (InstanceObject.TO_STRING.equals(member)) {
+            HeapLanguageUtils.arityCheck(0, arguments);
+            return InstanceWrapper.instanceString(receiver);
+        } else {
+            throw UnknownIdentifierException.create(member);
+        }
+    }
+
+    @ExportMessage
+    static Object readMember(PrimitiveArrayObject receiver, String member) {
+        switch (member) {
+            case InstanceObject.CLAZZ:
+                return new JavaClassObject(receiver.instance.getJavaClass());
+            case InstanceObject.STATICS:
+                return new StaticsObject(receiver.instance.getJavaClass());
+            case InstanceObject.ID:
+                return receiver.instance.getInstanceId();
+            case InstanceObject.WRAPPED_OBJECT:
+                return HeapLanguage.asGuestValue(receiver.instance);
+            default:
+                Object value = receiver.instance.getValueOfField(member);
+                return HeapLanguageUtils.heapToTruffle(value);
+        }
     }
 
 }

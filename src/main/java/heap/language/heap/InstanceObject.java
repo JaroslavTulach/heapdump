@@ -1,7 +1,9 @@
 package heap.language.heap;
 
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import heap.language.HeapLanguage;
@@ -21,10 +23,11 @@ import java.util.List;
 @ExportLibrary(InteropLibrary.class)
 public class InstanceObject extends InstanceWrapper<Instance> implements TruffleObject {
 
-    private static final String CLAZZ = "clazz";
-    private static final String STATICS = "statics";
-    private static final String ID = "id";
-    private static final String WRAPPED_OBJECT = "wrapped-object";
+    static final String CLAZZ = "clazz";
+    static final String STATICS = "statics";
+    static final String ID = "id";
+    static final String WRAPPED_OBJECT = "wrapped-object";
+    static final String TO_STRING = "toString";
 
     @NonNull
     private final Descriptors members;
@@ -43,8 +46,7 @@ public class InstanceObject extends InstanceWrapper<Instance> implements Truffle
             FieldValue value = fieldValues.get(i);
             members[i + 4] = value.getField().getName();
         }
-        // TODO: what about toString()?
-        this.members = Descriptors.build(members, null);
+        this.members = Descriptors.build(members, new String[]{ TO_STRING });
     }
 
     @NonNull
@@ -65,6 +67,21 @@ public class InstanceObject extends InstanceWrapper<Instance> implements Truffle
     @ExportMessage
     static boolean isMemberReadable(InstanceObject receiver, String member) {
         return receiver.members.hasProperty(member);
+    }
+
+    @ExportMessage
+    static boolean isMemberInvocable(InstanceObject receiver, String member) {
+        return receiver.members.hasFunction(member);
+    }
+
+    @ExportMessage
+    static Object invokeMember(InstanceObject receiver, String member, Object[] arguments) throws ArityException, UnknownIdentifierException {
+        if (TO_STRING.equals(member)) {
+            HeapLanguageUtils.arityCheck(0, arguments);
+            return InstanceWrapper.instanceString(receiver);
+        } else {
+            throw UnknownIdentifierException.create(member);
+        }
     }
 
     @ExportMessage

@@ -1,10 +1,10 @@
 package heap.language.heap;
 
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import heap.language.HeapLanguage;
+import heap.language.util.Descriptors;
 import heap.language.util.HeapLanguageUtils;
 import heap.language.util.InstanceWrapper;
 import org.netbeans.api.annotations.common.NonNull;
@@ -16,6 +16,10 @@ import java.util.List;
 
 @ExportLibrary(InteropLibrary.class)
 public class ObjectArrayObject extends InstanceWrapper<ObjectArrayInstance> implements TruffleObject {
+
+    private static final Descriptors MEMBERS = Descriptors.build(new String[]{
+        InstanceObject.CLAZZ, InstanceObject.STATICS, InstanceObject.ID, InstanceObject.WRAPPED_OBJECT
+    }, new String[]{ InstanceObject.TO_STRING });
 
     @NonNull
     private final List<Instance> instanceArray;  // underlying implementation is (supposedly) lazy
@@ -55,6 +59,53 @@ public class ObjectArrayObject extends InstanceWrapper<ObjectArrayInstance> impl
             throw InvalidArrayIndexException.create(at);
         }
         return HeapLanguageUtils.heapToTruffle(receiver.instanceArray.get((int) at));
+    }
+
+    @ExportMessage
+    static boolean hasMembers(@SuppressWarnings("unused") ObjectArrayObject receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static Object getMembers(ObjectArrayObject receiver, @SuppressWarnings("unused") boolean includeInternal) {
+        return MEMBERS;
+    }
+
+    @ExportMessage
+    static boolean isMemberReadable(ObjectArrayObject receiver, String member) {
+        return MEMBERS.hasProperty(member);
+    }
+
+    @ExportMessage
+    static boolean isMemberInvocable(ObjectArrayObject receiver, String member) {
+        return MEMBERS.hasFunction(member);
+    }
+
+    @ExportMessage
+    static Object invokeMember(ObjectArrayObject receiver, String member, Object[] arguments) throws ArityException, UnknownIdentifierException {
+        if (InstanceObject.TO_STRING.equals(member)) {
+            HeapLanguageUtils.arityCheck(0, arguments);
+            return InstanceWrapper.instanceString(receiver);
+        } else {
+            throw UnknownIdentifierException.create(member);
+        }
+    }
+
+    @ExportMessage
+    static Object readMember(ObjectArrayObject receiver, String member) {
+        switch (member) {
+            case InstanceObject.CLAZZ:
+                return new JavaClassObject(receiver.instance.getJavaClass());
+            case InstanceObject.STATICS:
+                return new StaticsObject(receiver.instance.getJavaClass());
+            case InstanceObject.ID:
+                return receiver.instance.getInstanceId();
+            case InstanceObject.WRAPPED_OBJECT:
+                return HeapLanguage.asGuestValue(receiver.instance);
+            default:
+                Object value = receiver.instance.getValueOfField(member);
+                return HeapLanguageUtils.heapToTruffle(value);
+        }
     }
 
 

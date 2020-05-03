@@ -555,7 +555,7 @@ public class OQLEngineTest {
         assertTrue(Number.class.isAssignableFrom(rsltClass[0]));
     }
 
-    @Test @Ignore
+    @Test
     public void testCountNoClosure() throws Exception {
         System.out.println("count - no closure");
 
@@ -574,7 +574,7 @@ public class OQLEngineTest {
         assertTrue(Number.class.isAssignableFrom(rsltClass[0]));
     }
 
-    @Test @Ignore
+    @Test
     public void testCount() throws Exception {
         System.out.println("count");
 
@@ -600,7 +600,7 @@ public class OQLEngineTest {
         final Class[] rsltClass = new Class[1];
 //        final boolean sorted[] = new boolean[] {true};
 
-        instance.executeQuery("select print(t.name); return { name: t.name? t.name.toString() : \"null\", thread: t };  from instanceof java.lang.Thread t", new ObjectVisitor() {
+        instance.executeQuery("select { name: t.name? t.name.toString() : \"null\", thread: t }  from instanceof java.lang.Thread t", new ObjectVisitor() {
 
             public boolean visit(Object o) {
                 rsltClass[0] = o.getClass();
@@ -611,7 +611,7 @@ public class OQLEngineTest {
         assertTrue(Map.class.isAssignableFrom(rsltClass[0]));
     }
 
-    @Test @Ignore
+    @Test
     public void testComplexStatement1() throws Exception {
         System.out.println("complex statement 1");
 
@@ -634,7 +634,7 @@ public class OQLEngineTest {
         assertEquals("MapEntry{sun.cpu.isalist = }", rslt[0]);
     }
 
-    @Test @Ignore
+    @Test
     public void testComplexStatement2() throws Exception {
         System.out.println("complex statement 2");
 
