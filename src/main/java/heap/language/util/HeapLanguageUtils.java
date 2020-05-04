@@ -133,7 +133,7 @@ public class HeapLanguageUtils {
      */
     public static Object heapToTruffle(Object heapObject) {
         if (heapObject == null) {
-            return NullValue.INSTANCE;
+            return HeapLanguage.NULL;
         } else if (isInteropValue(heapObject)) {
             return heapObject;
         } else if (heapObject instanceof PrimitiveArrayInstance) {
@@ -170,9 +170,9 @@ public class HeapLanguageUtils {
             return ((ObjectArrayObject) truffleObject).getInstance();
         } else if (truffleObject instanceof InstanceObject) {
             return ((InstanceObject) truffleObject).getInstance();
-        } else if (truffleObject instanceof NullValue) {
-            return null;
-        } else {
+        }/* else if (truffleObject instanceof NullValue) {
+            return null; TODO
+        }*/ else {
             return truffleObject;
             // If everything else fails, try to convert automatically.
             //return HeapLanguage.asHostObject(truffleObject);

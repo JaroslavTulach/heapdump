@@ -6,7 +6,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import heap.language.HeapLanguage;
 import heap.language.util.Descriptors;
 import heap.language.util.HeapLanguageUtils;
-import heap.language.util.NullValue;
 import heap.language.util.ReadOnlyArray;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.lib.profiler.heap.Field;
@@ -61,7 +60,7 @@ public class JavaClassObject implements TruffleObject {
     /* Class object for super class (or null if java.lang.Object). */
     private Object read_superclass() {
         JavaClass superclass = this.clazz.getSuperClass();
-        return superclass == null ? NullValue.INSTANCE : new JavaClassObject(superclass);
+        return superclass == null ? HeapLanguage.NULL : new JavaClassObject(superclass);
     }
 
     /* Name, value pairs for static fields of the Class. */

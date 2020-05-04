@@ -8,7 +8,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import heap.language.heap.JavaClassObject;
 import heap.language.util.HeapLanguageUtils;
 import heap.language.util.InstanceWrapper;
-import heap.language.util.NullValue;
 import heap.language.util.ReadOnlyArray;
 import org.graalvm.collections.Pair;
 import org.netbeans.lib.profiler.heap.Instance;
@@ -504,7 +503,7 @@ interface OQLGlobalSymbols {
             }
 
             if (max == null) {
-                return NullValue.INSTANCE;
+                return HeapLanguage.NULL;
             } else {
                 return max;
             }

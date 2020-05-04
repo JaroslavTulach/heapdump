@@ -87,6 +87,9 @@ import java.util.Map;
 )
 public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
 
+    /** A singleton null instance used by heap language. */
+    public static final TruffleObject NULL = BuiltIns.Null.INSTANCE;
+
     /**
      * <p>Set the script language which should be used when evaluating string expression arguments.
      * Defaults to JavaScript (if available).</p>
@@ -286,8 +289,8 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
             INSTANCES.put(MAP, OQLGlobalSymbols.Map.INSTANCE);
             INSTANCES.put(MAX, OQLGlobalSymbols.Max.INSTANCE);
 
-            INSTANCES.put(SET_SCRIPT_LANGUAGE, CustomGlobalSymbols.SetScriptLanguage.INSTANCE);
-            INSTANCES.put(BIND_GLOBAL_SYMBOLS, CustomGlobalSymbols.BindGlobalSymbols.INSTANCE);
+            INSTANCES.put(SET_SCRIPT_LANGUAGE, BuiltIns.SetScriptLanguage.INSTANCE);
+            INSTANCES.put(BIND_GLOBAL_SYMBOLS, BuiltIns.BindGlobalSymbols.INSTANCE);
         }
 
         @ExportMessage

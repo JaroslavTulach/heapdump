@@ -4,8 +4,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import heap.language.HeapLanguage;
 import heap.language.util.Descriptors;
-import heap.language.util.NullValue;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.lib.profiler.heap.FieldValue;
 import org.netbeans.lib.profiler.heap.Instance;
@@ -55,7 +55,7 @@ public class StaticsObject implements TruffleObject {
     static Object readMember(StaticsObject receiver, String member) {
         Object value = receiver.clazz.getValueOfStaticField(member);
         if (value == null) {
-            return NullValue.INSTANCE;
+            return HeapLanguage.NULL;
         } else if (value instanceof Instance) {
             return new InstanceObject((Instance) value);
         } else {

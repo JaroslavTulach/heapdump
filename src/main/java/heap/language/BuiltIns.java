@@ -4,14 +4,14 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import heap.language.util.NullValue;
 
 import java.util.Map;
 
 /**
- * Global symbols of heap language which are provided by us.
+ * Heap language utility classes which are unrealted to OQL but are used by us to provide advanced interop
+ * features.
  */
-interface CustomGlobalSymbols {
+interface BuiltIns {
 
     /**
      * Bind all global symbols into the context bindings of a specific language. Context can be either provided
@@ -69,9 +69,20 @@ interface CustomGlobalSymbols {
             Interop.checkArity(arguments, 1);
             String language = Interop.isNull(arguments[0]) ? null : Interop.asString(arguments[0]);
             HeapLanguage.setScriptLanguage(language);
-            return NullValue.INSTANCE;
+            return HeapLanguage.NULL;
         }
 
+    }
+
+    /** Just another null-like object in case we need it. */
+    @ExportLibrary(InteropLibrary.class)
+    final class Null implements TruffleObject {
+        public static final Null INSTANCE = new Null();
+        private Null() { }
+        @ExportMessage
+        public static boolean isNull(@SuppressWarnings("unused") Null receiver) {
+            return true;
+        }
     }
 
 }
