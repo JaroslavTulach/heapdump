@@ -2,15 +2,16 @@ package heap.language;
 
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import heap.language.util.Descriptors;
+import org.graalvm.collections.Pair;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Objects;
 
 /**
@@ -68,11 +69,177 @@ interface Interop {
     }
 
     /**
-     * Create an executable truffle object wrapping the given call target. The language envorinemnt
-     * is needed for
+     * Create an executable truffle object wrapping the given call target. The language environment
+     * is needed to wrap unknown Java objects into guest values.
      */
     static TruffleObject wrapCallTarget(CallTarget call, TruffleLanguage.Env language) {
         return new WrappedCall(call, language);
+    }
+
+    /**
+     * Create a lazy array-like truffle object which accesses elements in the given iterator.
+     */
+    static TruffleObject wrapIterator(Iterator<?> iterator) {
+        if (iterator instanceof WrappedIterator) {
+            return (WrappedIterator<?>) iterator;   // no need to wrap if already wrapped
+        }
+        return new WrappedIterator<>(iterator);
+    }
+
+    /**
+     * Create an iterator of (index, value) pairs out of (almost) any truffle object.
+     *  - If the object is an array, we iterate the array.
+     *  - If the object has readable members, we iterate these members.
+     */
+    static Iterator<Pair<?, ?>> intoIndexedIterator(final Object object, InteropLibrary interop) {
+        // TODO: Maybe we can bypass this for objects that actually implement Iterator/Iterable?
+        if (interop.hasArrayElements(object)) {
+            return new Iterator<Pair<?, ?>>() {
+                private int index = 0;
+                @Override
+                public boolean hasNext() {
+                    return interop.isArrayElementReadable(object, index);
+                }
+
+                @Override
+                public Pair<Integer, Object> next() {
+                    try {
+                        int elementIndex = index;
+                        Object element = interop.readArrayElement(object, index);
+                        this.index += 1;
+                        return Pair.create(elementIndex, element);
+                    } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                        throw new IllegalStateException("Illegal array access", e);  // should be unreachable
+                    }
+                }
+            };
+        } else if (interop.hasMembers(object)) {
+            try {
+                Object members = interop.getMembers(object);
+                return new Iterator<Pair<?,?>>() {
+
+                    private int index = 0;
+
+                    @Override
+                    public boolean hasNext() {
+                        return interop.isArrayElementReadable(members, index);
+                    }
+
+                    @Override
+                    public Pair<String, Object> next() {
+                        try {
+                            String elementKey = asString(interop.readArrayElement(members, index));
+                            Object element = interop.readMember(object, elementKey);
+                            index += 1;
+                            return Pair.create(elementKey, element);
+                        } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException e) {
+                            throw new IllegalStateException("Cannot access object member", e);  // should be unreachable
+                        }
+                    }
+
+                };
+            } catch (UnsupportedMessageException e) {
+                throw new IllegalStateException("Object does not have members", e);  // should be unreachable
+            }
+        } else {
+            throw new IllegalArgumentException("Cannot iterate "+object+".");
+        }
+    }
+
+    /**
+     * Exposes Java iterator as lazy truffle array. Currently, truffle does not have an iterator interface
+     * so this is basically the best we can do unless we want to emulate each language individually.
+     *
+     * If you want to access the values in a truly lazy way, we also export the {@code hasNext()/next()} methods
+     * as defined by standard Java iterators.
+     */
+    @ExportLibrary(InteropLibrary.class)
+    final class WrappedIterator<T> implements TruffleObject, Iterator<T> {
+
+        private static final String HAS_NEXT = "hasNext";
+        private static final String NEXT = "next";
+
+        private static final Descriptors MEMBERS = Descriptors.functions(HAS_NEXT, NEXT);
+
+        private final Iterator<T> iterator;
+        private final ArrayList<Object> valueCache;
+
+        public WrappedIterator(Iterator<T> iterator) {
+            this.iterator = iterator;
+            this.valueCache = new ArrayList<>();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return this.iterator.hasNext();
+        }
+
+        @Override
+        public T next() {
+            T val = this.iterator.next();
+            valueCache.add(val);
+            return val;
+        }
+
+        @ExportMessage
+        public static boolean hasArrayElements(@SuppressWarnings("unused") WrappedIterator<?> receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        public static long getArraySize(WrappedIterator<?> receiver) {
+            // Here, we sadly have to iterate the whole array at the moment...
+            while (receiver.hasNext()) { receiver.next(); }
+            return receiver.valueCache.size();
+        }
+
+        @ExportMessage
+        public static boolean isArrayElementReadable(WrappedIterator<?> receiver, long index) {
+            while (receiver.hasNext() && index >= receiver.valueCache.size()) {
+                receiver.next();
+            }
+            return index < receiver.valueCache.size();
+        }
+
+        @ExportMessage
+        public static Object readArrayElement(WrappedIterator<?> receiver, long index) {
+            if (!isArrayElementReadable(receiver, index)) {
+                throw new ArrayIndexOutOfBoundsException((int) index);
+            }
+            return receiver.valueCache.get((int) index);
+        }
+
+        @ExportMessage
+        static boolean hasMembers(@SuppressWarnings("unused") WrappedIterator<?> receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object getMembers(@SuppressWarnings("unused") WrappedIterator<?> receiver,
+                                 @SuppressWarnings("unused") boolean includeInternal) {
+            return WrappedIterator.MEMBERS;
+        }
+
+        @ExportMessage
+        static boolean isMemberInvocable(@SuppressWarnings("unused") WrappedIterator<?> receiver, String member) {
+            return MEMBERS.hasFunction(member);
+        }
+
+        @ExportMessage
+        static Object invokeMember(WrappedIterator<?> receiver, String member, Object[] arguments)
+                throws ArityException, UnknownIdentifierException
+        {
+            Interop.checkArity(arguments, 0);
+            switch (member) {
+                case NEXT:
+                    return receiver.next();
+                case HAS_NEXT:
+                    return receiver.hasNext();
+                default:
+                    throw UnknownIdentifierException.create(member);
+            }
+        }
+
     }
 
     /**

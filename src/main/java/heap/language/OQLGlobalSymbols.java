@@ -14,6 +14,7 @@ import org.netbeans.lib.profiler.heap.JavaClass;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Iterator;
 
 /**
  * Implementations of built in global functions from OQL.
@@ -92,39 +93,30 @@ interface OQLGlobalSymbols {
         }
 
         @ExportMessage
-        static Object execute(
-                @SuppressWarnings("unused") Map receiver,
-                Object[] arguments,
-                @CachedLibrary(limit = "3") InteropLibrary call
-        ) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
-            HeapLanguageUtils.arityCheck(2, arguments);
-            Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.iterateObject(arguments[0], call);
-            Object action = arguments[1];
-            ArrayList<Object> result = new ArrayList<>();
-            if (action instanceof String) {
-                TruffleObject target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array", "result");
-                while (it.hasMoreElements()) {
-                    Pair<Object, Object> el = it.nextElement();
-                    Object element = el.getRight();
-                    if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
-                        element = element.toString();
-                    }
-                    result.add(call.execute(target, element, el.getLeft(), arguments[0], HeapLanguage.asGuestValue(result)));
-                }
-            } else if (call.isExecutable(action)) {
-                while (it.hasMoreElements()) {
-                    Pair<Object, Object> el = it.nextElement();
-                    Object element = el.getRight();
-                    if (element instanceof Character) {
-                        element = element.toString();
-                    }
-                    result.add(call.execute(action, element, el.getLeft(), arguments[0], HeapLanguage.asGuestValue(result)));
-                }
-            } else {
-                throw UnsupportedTypeException.create(arguments, "Expected callback or string expression as second argument.");
-            }
+        static Object execute(@SuppressWarnings("unused") Map receiver, Object[] arguments) throws ArityException {
+            Interop.checkArity(arguments, 2);
+            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+            Iterator<Pair<?, ?>> items = Interop.intoIndexedIterator(arguments[0], interop);
+            TruffleObject callback = HeapLanguage.resolveCallbackArgument(arguments[1], interop, "it", "index", "array", "result");
 
-            return new ReadOnlyArray(result.toArray(new Object[0]));
+            Iterator<Object> mappedIterator = new Iterator<Object>() {
+                @Override
+                public boolean hasNext() {
+                    return items.hasNext();
+                }
+
+                @Override
+                public Object next() {
+                    try {
+                        Pair<?, ?> item = items.next();
+                        return interop.execute(callback, item.getRight(), item.getLeft(), arguments[0], callback);
+                    } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                        throw new RuntimeException("Cannot map values.", e);
+                    }
+                }
+            };
+
+            return Interop.wrapIterator(mappedIterator);
         }
 
     }

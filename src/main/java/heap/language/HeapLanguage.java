@@ -8,6 +8,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -131,6 +132,31 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         Source source = Source.newBuilder(scriptLanguage, expression, "expression."+scriptLanguage).build();
         TruffleLanguage.Env env = state.getEnvironment();
         return Interop.wrapCallTarget(env.parsePublic(source, argNames), env);
+    }
+
+    /**
+     * <p>Resolve callback/string expression arguments. If the argument is already executable, just return it.
+     * If not, try to parse it as executable string expression.</p>
+     */
+    static TruffleObject resolveCallbackArgument(@NonNull Object argument, InteropLibrary interop, String... argNames) {
+        if (interop.isExecutable(argument)) {
+            return (TruffleObject) argument;
+        }
+        String expression = null;
+        if (argument instanceof String) {
+            expression = (String) argument;
+        } else if (interop.isString(argument)) {
+            try {
+                expression = interop.asString(argument);
+            } catch (UnsupportedMessageException e) {   // should be unreachable
+                throw new IllegalStateException("Cannot convert "+argument+" to string.", e);
+            }
+        }
+        if (expression != null) {
+            return parseArgumentExpression(expression, argNames);
+        } else {
+            throw new IllegalArgumentException("Expected callback function or executable string expression. Got "+argument);
+        }
     }
 
     /**
