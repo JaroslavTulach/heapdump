@@ -213,7 +213,7 @@ public class OQLEngineTest {
 
     @Test
     public void testHeapObjects() throws Exception {
-        System.out.println("heap.heap");
+        System.out.println("heap.objects");
 
         final int[] count = new int[]{0,0};
 
@@ -496,7 +496,7 @@ public class OQLEngineTest {
         final boolean sorted[] = new boolean[] {true};
 
 
-        instance.executeQuery("select map(sort(filter(heap.heap('[C'), 'it.length > 0'), 'sizeof(lhs) - sizeof(rhs)'), \"sizeof(it)\")", new ObjectVisitor() {
+        instance.executeQuery("select map(sort(filter(heap.objects('[C'), 'it.length > 0'), 'sizeof(lhs) - sizeof(rhs)'), \"sizeof(it)\")", new ObjectVisitor() {
 
             public boolean visit(Object o) {
                 int aSize = ((Number)o).intValue();
@@ -520,7 +520,7 @@ public class OQLEngineTest {
         final boolean sorted[] = new boolean[] {true};
 
 
-        instance.executeQuery("select map(sort(heap.heap('[C'), 'sizeof(lhs) - sizeof(rhs)'), \"sizeof(it)\")", new ObjectVisitor() {
+        instance.executeQuery("select map(sort(heap.objects('[C'), 'sizeof(lhs) - sizeof(rhs)'), \"sizeof(it)\")", new ObjectVisitor() {
 
             public boolean visit(Object o) {
                 int aSize = ((Number)o).intValue();
@@ -642,7 +642,7 @@ public class OQLEngineTest {
 
         instance.executeQuery(
                 "select map(filter(heap.findClass('java.lang.System').statics.props.table, 'it != null && it.key != null && it.value != null'), " +
-                        "'{ key: it.key.toString(), value: it.value.toString() }')", new ObjectVisitor() {
+                        "function(it) { return { key: it.key.toString(), value: it.value.toString() } })", new ObjectVisitor() {
 
                     public boolean visit(Object o) {
                         System.out.println(o);
@@ -703,7 +703,7 @@ public class OQLEngineTest {
     public void testTop() throws Exception {
         System.out.println("top 5");
 
-        instance.executeQuery("select top(heap.heap('java.lang.String', false, '(2 * it.offset) + (2 * (it.value.length - (1*it.count + 1*it.offset))) > 0'), '((2 * rhs.offset) + (2 * (rhs.value.length - (1*rhs.count + 1*rhs.offset)))) - ((2 * lhs.offset) + (2 * (lhs.value.length - (1*lhs.count + 1*lhs.offset))))')", new ObjectVisitor() {
+        instance.executeQuery("select top(heap.objects('java.lang.String', false, '(2 * it.offset) + (2 * (it.value.length - (1*it.count + 1*it.offset))) > 0'), '((2 * rhs.offset) + (2 * (rhs.value.length - (1*rhs.count + 1*rhs.offset)))) - ((2 * lhs.offset) + (2 * (lhs.value.length - (1*lhs.count + 1*lhs.offset))))')", new ObjectVisitor() {
 
             public boolean visit(Object o) {
                 System.out.println(o);
