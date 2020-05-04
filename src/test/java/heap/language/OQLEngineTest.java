@@ -454,7 +454,7 @@ public class OQLEngineTest {
         assertTrue(count[0] > 0);
     }
 
-    @Test @Ignore
+    @Test
     public void testContains() throws Exception {
         System.out.println("contains");
 
@@ -488,7 +488,7 @@ public class OQLEngineTest {
         assertEquals(output[1], output[0]);
     }
 
-    @Test @Ignore
+    @Test
     public void testFilter() throws Exception {
         System.out.println("filter");
 
@@ -512,7 +512,7 @@ public class OQLEngineTest {
         assertTrue(sorted[0]);
     }
 
-    @Test @Ignore
+    @Test
     public void testSort() throws Exception {
         System.out.println("sort");
 
