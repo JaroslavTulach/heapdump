@@ -6,6 +6,7 @@ import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import heap.language.util.Descriptors;
+import heap.language.util.ReadOnlyArray;
 import org.graalvm.collections.Pair;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
@@ -25,6 +26,15 @@ interface Interop {
     static void checkArity(Object[] arguments, int expected) throws ArityException {
         if (arguments.length != expected) {
             throw ArityException.create(expected, arguments.length);
+        }
+    }
+
+    /**
+     * Ensure that arguments have the expected length, allowing number of optional arguments.
+     */
+    static void checkArityOptional(Object[] arguments, int minimum, int maximum) throws ArityException {
+        if (arguments.length < minimum || arguments.length > maximum) {
+            throw ArityException.create(maximum, arguments.length);
         }
     }
 
@@ -69,6 +79,101 @@ interface Interop {
     }
 
     /**
+     * Takes an interop value and treats it as a bool.
+     */
+    static boolean asBoolean(Object boolObject) {
+        if (boolObject instanceof Boolean) {
+            return (Boolean) boolObject;
+        } else if (boolObject instanceof TruffleObject) {
+            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+            if (interop.isBoolean(boolObject)) {
+                try {
+                    return interop.asBoolean(boolObject);
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("Argument is boolean but does not implement `asBoolean`.", e);
+                }
+            }
+        }
+        throw new IllegalArgumentException("Expected boolean, but found "+boolObject);
+    }
+
+    /**
+     * Interpret the given interop values as numbers and compare them (assuming standard Java compareTo semantics).
+     */
+    static int compareNumeric(Object left, Object right) {
+        // First, try to compare as long (more precise)
+        Long leftLong = tryAsIntegralNumber(left);
+        Long rightLong = tryAsIntegralNumber(right);
+        if (leftLong != null && rightLong != null) {
+            return Long.compare(leftLong, rightLong);
+        }
+        Double leftDouble = leftLong == null ? tryAsFloatingPointNumber(left) : Double.valueOf(leftLong);
+        Double rightDouble = rightLong == null ? tryAsFloatingPointNumber(right) : Double.valueOf(rightLong);
+        if (leftDouble != null && rightDouble != null) {
+            return Double.compare(leftDouble, rightDouble);
+        }
+        throw new IllegalArgumentException(left+" "+right+" are not numerically comparable.");
+    }
+
+    /**
+     * Interpret the given interop value as integral. If not possible, return null.
+     *
+     * All smaller data types are automatically lifted to long.
+     */
+    static Long tryAsIntegralNumber(Object number) {
+        if (number instanceof Byte) {
+            return (long) (Byte) number;
+        } else if (number instanceof Short) {
+            return (long) (Short) number;
+        } else if (number instanceof Integer) {
+            return (long) (Integer) number;
+        } else if (number instanceof Long) {
+            return (Long) number;
+        } else if (number instanceof TruffleObject) {
+            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+            if (interop.isNumber(number) && interop.fitsInLong(number)) {
+                try {
+                    return interop.asLong(number);
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("Fits into long, but conversion failed.", e);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Same as {@link Interop#tryAsIntegralNumber(Object)}, but throws exception if the conversion is
+     * not successful.
+     */
+    static long asIntegralNumber(Object number) {
+        Long value = tryAsIntegralNumber(number);
+        return Objects.requireNonNull(value, "Value cannot be converted to long."); // TODO: This is not semantically correct exception here
+    }
+
+    /**
+     * Interpret the given interop value as floating point number. If not possible, return null.
+     */
+    static Double tryAsFloatingPointNumber(Object number) {
+        if (number instanceof Float) {
+            return (double) (Float) number;
+        } else if (number instanceof Double) {
+            return (Double) number;
+        } else if (number instanceof TruffleObject) {
+            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+            if (interop.isNumber(number) && interop.fitsInDouble(number)) {
+                try {
+                    return interop.asDouble(number);
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("Fits into double, but conversion failed.", e);
+                }
+            }
+        }
+        Long integral = tryAsIntegralNumber(number);
+        return integral != null ? (double) integral : null;
+    }
+
+    /**
      * Create an executable truffle object wrapping the given call target. The language environment
      * is needed to wrap unknown Java objects into guest values.
      */
@@ -84,6 +189,14 @@ interface Interop {
             return (WrappedIterator<?>) iterator;   // no need to wrap if already wrapped
         }
         return new WrappedIterator<>(iterator);
+    }
+
+    /**
+     * Create a read-only array-like truffle object from the given list of items. Items are not converted,
+     * so make sure list contents are already valid interop values.
+     */
+    static TruffleObject wrapArray(Object[] items) {
+        return new ReadOnlyArray(items);
     }
 
     /**

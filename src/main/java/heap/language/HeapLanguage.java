@@ -281,22 +281,28 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
 
         // OQL requested symbols:
         public static final String CLASS_OF = "classof";
-        public static final String LENGTH = "length";
-        public static final String MAP = "map";
         public static final String TO_HTML = "toHtml";
         public static final String SIZE_OF = "sizeof";
         public static final String CONCAT = "concat";
         public static final String CONTAINS = "contains";
         public static final String COUNT = "count";
         public static final String FILTER = "filter";
+        public static final String LENGTH = "length";
+        public static final String MAP = "map";
         public static final String MAX = "max";
+        public static final String MIN = "min";
+        public static final String SORT = "sort";
+        public static final String SUM = "sum";
+        public static final String TO_ARRAY = "toArray";
+        public static final String UNIQUE = "unique";
 
         // Extra symbols provided by us:
         public static final String SET_SCRIPT_LANGUAGE = "setScriptLanguage";
         public static final String BIND_GLOBAL_SYMBOLS = "bindGlobalSymbols";
 
         private static final Descriptors MEMBERS = Descriptors.properties(
-                CLASS_OF, LENGTH, MAP, TO_HTML, SIZE_OF, CONCAT,
+                CLASS_OF, TO_HTML, SIZE_OF,
+                CONCAT, CONTAINS, COUNT, FILTER, LENGTH, MAP, MAX, MIN, SORT, SUM, TO_ARRAY, UNIQUE,
                 SET_SCRIPT_LANGUAGE, BIND_GLOBAL_SYMBOLS
         );
 
@@ -314,6 +320,11 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
             INSTANCES.put(LENGTH, OQLGlobalSymbols.Length.INSTANCE);
             INSTANCES.put(MAP, OQLGlobalSymbols.Map.INSTANCE);
             INSTANCES.put(MAX, OQLGlobalSymbols.Max.INSTANCE);
+            INSTANCES.put(MIN, OQLGlobalSymbols.Min.INSTANCE);
+            INSTANCES.put(SORT, OQLGlobalSymbols.Sort.INSTANCE);
+            INSTANCES.put(SUM, OQLGlobalSymbols.Sum.INSTANCE);
+            INSTANCES.put(TO_ARRAY, OQLGlobalSymbols.ToArray.INSTANCE);
+            INSTANCES.put(UNIQUE, OQLGlobalSymbols.Unique.INSTANCE);
 
             INSTANCES.put(SET_SCRIPT_LANGUAGE, BuiltIns.SetScriptLanguage.INSTANCE);
             INSTANCES.put(BIND_GLOBAL_SYMBOLS, BuiltIns.BindGlobalSymbols.INSTANCE);
