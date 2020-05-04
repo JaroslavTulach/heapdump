@@ -186,7 +186,7 @@ public class HeapObject implements TruffleObject {
                 }
                 filter = (TruffleObject) arg;
             } else if (arg instanceof String) { // Filter is a string expression
-                CallTarget filterCall = HeapLanguage.parseArgumentExpression((String) arg, "it");
+                TruffleObject filterCall = HeapLanguage.parseArgumentExpression((String) arg, "it");
 
                 // TODO: Unite with callback method once we have a better option to call JS
                 //noinspection unchecked
@@ -195,7 +195,13 @@ public class HeapObject implements TruffleObject {
                     @Override
                     public Object check(Instance item) {
                         Object value = HeapLanguageUtils.heapToTruffle(item);
-                        boolean isValid = (Boolean) filterCall.call(value);
+                        boolean isValid;
+                        try {
+                            // TODO: This can return a bool-like object!
+                            isValid = (Boolean) callFn.execute(filterCall, value);
+                        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                            throw new RuntimeException(e);
+                        }
                         return isValid ? value : null;
                     }
                 });

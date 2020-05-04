@@ -1,6 +1,8 @@
 package heap.language;
 
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -74,15 +76,5 @@ interface BuiltIns {
 
     }
 
-    /** Just another null-like object in case we need it. */
-    @ExportLibrary(InteropLibrary.class)
-    final class Null implements TruffleObject {
-        public static final Null INSTANCE = new Null();
-        private Null() { }
-        @ExportMessage
-        public static boolean isNull(@SuppressWarnings("unused") Null receiver) {
-            return true;
-        }
-    }
 
 }

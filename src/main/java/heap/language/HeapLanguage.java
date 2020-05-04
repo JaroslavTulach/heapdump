@@ -88,7 +88,7 @@ import java.util.Map;
 public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
 
     /** A singleton null instance used by heap language. */
-    public static final TruffleObject NULL = BuiltIns.Null.INSTANCE;
+    public static final TruffleObject NULL = Interop.Primitives.Null.INSTANCE;
 
     /**
      * <p>Set the script language which should be used when evaluating string expression arguments.
@@ -117,10 +117,10 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
      *
      * @param expression String expression to parse.
      * @param argNames Optional argument names which appear in the expression.
-     * @return An executable call target corresponding to the expression.
+     * @return An executable truffle object representing the parsed function.
      * @throws IllegalStateException Expression arguments are disabled.
      */
-    static CallTarget parseArgumentExpression(@NonNull String expression, String... argNames) {
+    static TruffleObject parseArgumentExpression(@NonNull String expression, String... argNames) {
         State state = TruffleLanguage.getCurrentContext(HeapLanguage.class);
         String scriptLanguage = state.getScriptLanguage();
         if (scriptLanguage == null) {
@@ -129,8 +129,8 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
             );
         }
         Source source = Source.newBuilder(scriptLanguage, expression, "expression."+scriptLanguage).build();
-        // TODO: Substitute this for a TruffleObject that will also wrap unsupported primitive objects
-        return state.getEnvironment().parsePublic(source, argNames);
+        TruffleLanguage.Env env = state.getEnvironment();
+        return Interop.wrapCallTarget(env.parsePublic(source, argNames), env);
     }
 
     /**

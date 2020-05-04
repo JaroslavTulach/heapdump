@@ -1,6 +1,5 @@
 package heap.language;
 
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -103,14 +102,14 @@ interface OQLGlobalSymbols {
             Object action = arguments[1];
             ArrayList<Object> result = new ArrayList<>();
             if (action instanceof String) {
-                CallTarget target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array", "result");
+                TruffleObject target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array", "result");
                 while (it.hasMoreElements()) {
                     Pair<Object, Object> el = it.nextElement();
                     Object element = el.getRight();
                     if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
                         element = element.toString();
                     }
-                    result.add(target.call(element, el.getLeft(), arguments[0], HeapLanguage.asGuestValue(result)));
+                    result.add(call.execute(target, element, el.getLeft(), arguments[0], HeapLanguage.asGuestValue(result)));
                 }
             } else if (call.isExecutable(action)) {
                 while (it.hasMoreElements()) {
@@ -284,14 +283,14 @@ interface OQLGlobalSymbols {
             Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.iterateObject(arguments[0], call);
             Object action = arguments[1];
             if (action instanceof String) {
-                CallTarget target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array");
+                TruffleObject target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array");
                 while (it.hasMoreElements()) {
                     Pair<Object, Object> el = it.nextElement();
                     Object element = el.getRight();
                     if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
                         element = element.toString();
                     }
-                    if ((Boolean) target.call(element, el.getLeft(), arguments[0])) {
+                    if ((Boolean) call.execute(target, element, el.getLeft(), arguments[0])) {
                         return Boolean.TRUE;
                     }
                 }
@@ -341,14 +340,14 @@ interface OQLGlobalSymbols {
             Object action = arguments[1];
             int count = 0;
             if (action instanceof String) {
-                CallTarget target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array");
+                TruffleObject target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array");
                 while (it.hasMoreElements()) {
                     Pair<Object, Object> el = it.nextElement();
                     Object element = el.getRight();
                     if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
                         element = element.toString();
                     }
-                    if ((Boolean) target.call(element, el.getLeft(), arguments[0])) {
+                    if ((Boolean) call.execute(target, element, el.getLeft(), arguments[0])) {
                         count += 1;
                     }
                 }
@@ -395,14 +394,14 @@ interface OQLGlobalSymbols {
             Object action = arguments[1];
             ArrayList<Object> result = new ArrayList<>();
             if (action instanceof String) {
-                CallTarget target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array", "result");
+                TruffleObject target = HeapLanguage.parseArgumentExpression((String) action, "it", "index", "array", "result");
                 while (it.hasMoreElements()) {
                     Pair<Object, Object> el = it.nextElement();
                     Object element = el.getRight();
                     if (element instanceof Character) { // WHAT THE ACTUAL FUCK?!
                         element = element.toString();
                     }
-                    if ((Boolean) target.call(element, el.getLeft(), arguments[0], HeapLanguage.asGuestValue(result))) {
+                    if ((Boolean) call.execute(target, element, el.getLeft(), arguments[0], HeapLanguage.asGuestValue(result))) {
                         result.add(element);
                     }
                 }
@@ -471,7 +470,7 @@ interface OQLGlobalSymbols {
                 Enumeration<Pair<Object, Object>> it = HeapLanguageUtils.iterateObject(arguments[0], call);
                 Object action = arguments[1];
                 if (action instanceof String) {
-                    CallTarget target = HeapLanguage.parseArgumentExpression((String) action, "lhs", "rhs");
+                    TruffleObject target = HeapLanguage.parseArgumentExpression((String) action, "lhs", "rhs");
                     while (it.hasMoreElements()) {
                         Pair<Object, Object> el = it.nextElement();
                         Object element = el.getRight();
@@ -481,7 +480,7 @@ interface OQLGlobalSymbols {
                         if (max == null) {
                             max = element;
                         } else {
-                            if ((Boolean) target.call(element, max)) {  // true if lhs > rhs
+                            if ((Boolean) call.execute(target, element, max)) {  // true if lhs > rhs
                                 max = element;
                             }
                         }
