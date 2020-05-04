@@ -235,7 +235,19 @@ interface Interop {
 
                     @Override
                     public boolean hasNext() {
-                        return interop.isArrayElementReadable(members, index);
+                        while (interop.isArrayElementReadable(members, index)) {
+                            try {
+                                String elementKey = asString(interop.readArrayElement(members, index));
+                                if (interop.isMemberReadable(object, elementKey)) {
+                                    return true;
+                                } else {
+                                    index += 1;
+                                }
+                            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                                throw new IllegalStateException("Error accessing object member", e);  // should be unreachable
+                            }
+                        }
+                        return false;
                     }
 
                     @Override
@@ -246,7 +258,8 @@ interface Interop {
                             index += 1;
                             return Pair.create(elementKey, element);
                         } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException e) {
-                            throw new IllegalStateException("Cannot access object member", e);  // should be unreachable
+                            e.printStackTrace();
+                            throw new IllegalStateException("Error accessing object member", e);  // should be unreachable
                         }
                     }
 
