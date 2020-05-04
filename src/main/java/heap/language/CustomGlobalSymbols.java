@@ -1,26 +1,29 @@
 package heap.language;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.*;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import heap.language.util.HeapLanguageUtils;
 import heap.language.util.NullValue;
 
 import java.util.Map;
 
 /**
- * Global symbols of heap language which are provided by us
+ * Global symbols of heap language which are provided by us.
  */
 interface CustomGlobalSymbols {
 
-    /** Bind all global symbols into the context of a specific language. */
+    /**
+     * Bind all global symbols into the context bindings of a specific language. Context can be either provided
+     * by the language (e.g. {@code this} in JavaScript), or by the interop directly
+     * (e.g. {@code context.getBindings("python")}).
+     */
     @ExportLibrary(InteropLibrary.class)
     final class BindGlobalSymbols implements TruffleObject {
 
-        public static final BindGlobalSymbols INSTANCE = new BindGlobalSymbols();
+        static final BindGlobalSymbols INSTANCE = new BindGlobalSymbols();
 
-        public BindGlobalSymbols() {}
+        private BindGlobalSymbols() {}
 
         @ExportMessage
         static boolean isExecutable(@SuppressWarnings("unused") BindGlobalSymbols receiver) {
@@ -28,21 +31,22 @@ interface CustomGlobalSymbols {
         }
 
         @ExportMessage
-        static Object execute(
-                @SuppressWarnings("unused") BindGlobalSymbols receiver,
-                Object[] arguments,
-                @CachedLibrary(limit = "3") InteropLibrary callFn
-        ) throws ArityException {
-            HeapLanguageUtils.arityCheck(1, arguments);
-            Object bindings = arguments[0];
+        static Object execute(@SuppressWarnings("unused") BindGlobalSymbols receiver, Object[] arguments) throws ArityException {
+            Interop.checkArity(arguments, 1);
+            TruffleObject bindings = (TruffleObject) arguments[0];
+            BindGlobalSymbols.registerSymbols(bindings, InteropLibrary.getFactory().getUncached());
+            return bindings;
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private static void registerSymbols(TruffleObject bindings, InteropLibrary interop) {
             for (Map.Entry<String, TruffleObject> symbol : HeapLanguage.Globals.INSTANCES.entrySet()) {
                 try {
-                    callFn.writeMember(bindings, symbol.getKey(), symbol.getValue());
-                } catch (UnsupportedMessageException | UnknownIdentifierException | UnsupportedTypeException e) {
-                    throw new RuntimeException("Error registering global symbol.", e);
+                    interop.writeMember(bindings, symbol.getKey(), symbol.getValue());
+                } catch (UnsupportedTypeException | UnsupportedMessageException | UnknownIdentifierException e) {
+                    throw new IllegalStateException("Cannot register global symbol `"+symbol.getKey()+"`.", e);
                 }
             }
-            return NullValue.INSTANCE;
         }
 
     }
@@ -51,9 +55,9 @@ interface CustomGlobalSymbols {
     @ExportLibrary(InteropLibrary.class)
     final class SetScriptLanguage implements TruffleObject {
 
-        public static final SetScriptLanguage INSTANCE = new SetScriptLanguage();
+        static final SetScriptLanguage INSTANCE = new SetScriptLanguage();
 
-        public SetScriptLanguage() {}
+        private SetScriptLanguage() {}
 
         @ExportMessage
         static boolean isExecutable(@SuppressWarnings("unused") SetScriptLanguage receiver) {
@@ -61,26 +65,13 @@ interface CustomGlobalSymbols {
         }
 
         @ExportMessage
-        static Object execute(
-                @SuppressWarnings("unused") SetScriptLanguage receiver,
-                Object[] arguments,
-                @CachedLibrary(limit = "3") InteropLibrary interop
-        ) throws ArityException, UnsupportedTypeException {
-            HeapLanguageUtils.arityCheck(1, arguments);
-            Object arg = arguments[0];
-            if (arg instanceof String) {
-                HeapLanguage.setScriptLanguage((String) arg);
-            } else if (arg instanceof TruffleObject && interop.isNull(arg)) {
-                HeapLanguage.setScriptLanguage(null);
-            } else {
-                throw UnsupportedTypeException.create(arguments, "Expected String or null as argument.");
-            }
+        static Object execute(@SuppressWarnings("unused") SetScriptLanguage receiver, Object[] arguments) throws ArityException {
+            Interop.checkArity(arguments, 1);
+            String language = Interop.isNull(arguments[0]) ? null : Interop.asString(arguments[0]);
+            HeapLanguage.setScriptLanguage(language);
             return NullValue.INSTANCE;
         }
 
     }
-
-
-
 
 }
