@@ -65,68 +65,6 @@ public class HeapLanguageUtils {
         throw UnsupportedTypeException.create(arguments, String.format("Expected %s as argument %d.", clazz.getSimpleName(), argIndex+1));
     }
 
-    /**
-     * Construct a Java Enumeration from an arbitrary truffle object. The iterator yields a pair: index and the actual value.
-     * Both values must be valid interop values.
-     */
-    public static Enumeration<Pair<Object, Object>> iterateObject(Object object, InteropLibrary call) {
-        if (object instanceof TruffleObject) {
-            if (call.hasArrayElements(object)) {    // object is array-like - we can access it using indices
-                return new Enumeration<Pair<Object, Object>>() {
-
-                    private int index = 0;
-
-                    @Override
-                    public boolean hasMoreElements() {
-                        return call.isArrayElementReadable(object, index);
-                    }
-
-                    @Override
-                    public Pair<Object, Object> nextElement() {
-                        try {
-                            int elementIndex = index;
-                            Object element = call.readArrayElement(object, index);
-                            this.index += 1;
-                            return Pair.create(elementIndex, element);
-                        } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                            throw new RuntimeException("Illegal array access", e);  // should be unreachable
-                        }
-                    }
-
-                };
-            } else if (call.hasMembers(object)) {   // object is not an array, but it has iterable members
-                try {
-                    Object members = call.getMembers(object);
-                    return new Enumeration<Pair<Object, Object>>() {
-
-                        private int index = 0;
-
-                        @Override
-                        public boolean hasMoreElements() {
-                            return call.isArrayElementReadable(members, index);
-                        }
-
-                        @Override
-                        public Pair<Object, Object> nextElement() {
-                            try {
-                                String elementKey = (String) call.readArrayElement(members, index);
-                                Object element = call.readMember(object, elementKey);
-                                index += 1;
-                                return Pair.create(elementKey, element);
-                            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException e) {
-                                throw new RuntimeException("Cannot access object member", e);
-                            }
-                        }
-
-                    };
-                } catch (UnsupportedMessageException e) {
-                    throw new RuntimeException("Object does not have members", e);  // should be unreachable
-                }
-            }
-        }
-        // either not a truffle object or it is not an array or object...
-        throw new IllegalArgumentException("Expected array/enumeration, but found "+object);
-    }
 
     /**
      * Safely convert an object returned by the heap API so that it can be manipulated by truffle.
