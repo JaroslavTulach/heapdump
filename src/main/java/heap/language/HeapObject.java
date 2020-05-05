@@ -1,11 +1,9 @@
 package heap.language;
 
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import heap.language.heap.IteratorWrapperObject;
 import heap.language.heap.JavaClassObject;
 import heap.language.util.Descriptors;
 import heap.language.util.FilterIterator;
@@ -143,7 +141,18 @@ public class HeapObject implements TruffleObject {
     private Object invoke_classes(Object[] arguments) throws ArityException {
         HeapLanguageUtils.arityCheck(0, arguments);
         //noinspection unchecked
-        return new IteratorWrapperObject(this.heap.getClasses());
+        Iterator<JavaClass> it = this.heap.getClasses();
+        return Interop.wrapIterator(new Iterator<Object>() {
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override
+            public Object next() {
+                return new JavaClassObject(it.next());
+            }
+        });
     }
 
     /* returns an enumeration of Java heap */
@@ -191,7 +200,7 @@ public class HeapObject implements TruffleObject {
                 // TODO: Unite with callback method once we have a better option to call JS
                 //noinspection unchecked
                 final Iterator<Instance> instances = (Iterator<Instance>) this.heap.getInstances(javaClass, includeSubtypes);
-                return new IteratorWrapperObject(new FilterIterator<Instance>(instances) {
+                return Interop.wrapIterator(new FilterIterator<Instance>(instances) {
                     @Override
                     public Object check(Instance item) {
                         Object value = HeapLanguageUtils.heapToTruffle(item);
@@ -217,10 +226,20 @@ public class HeapObject implements TruffleObject {
         //noinspection unchecked
         final Iterator<Instance> instances = (Iterator<Instance>) this.heap.getInstances(javaClass, includeSubtypes);
         if (filter == null) {
-            return new IteratorWrapperObject(instances);
+            return Interop.wrapIterator(new Iterator<Object>() {
+                @Override
+                public boolean hasNext() {
+                    return instances.hasNext();
+                }
+
+                @Override
+                public Object next() {
+                    return HeapLanguageUtils.heapToTruffle(instances.next());
+                }
+            });
         } else {
             TruffleObject finalFilter = filter;
-            return new IteratorWrapperObject(new FilterIterator<Instance>(instances) {
+            return Interop.wrapIterator(new FilterIterator<Instance>(instances) {
                 @Override
                 public Object check(Instance item) {
                     try {
@@ -239,7 +258,17 @@ public class HeapObject implements TruffleObject {
         HeapLanguageUtils.arityCheck(0, arguments);
         //noinspection unchecked
         Iterator<Instance> instances = (Iterator<Instance>) heap.getFinalizerObjects();
-        return new IteratorWrapperObject(instances);
+        return Interop.wrapIterator(new Iterator<Object>() {
+            @Override
+            public boolean hasNext() {
+                return instances.hasNext();
+            }
+
+            @Override
+            public Object next() {
+                return HeapLanguageUtils.heapToTruffle(instances.next());
+            }
+        });
     }
 
     private static Object invoke_livepaths(HeapObject receiver, Object[] arguments) {

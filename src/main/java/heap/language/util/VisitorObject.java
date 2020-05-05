@@ -42,10 +42,11 @@ public class VisitorObject implements TruffleObject {
             throws UnknownIdentifierException, ArityException {
         if (VISIT.equals(member)) {
             HeapLanguageUtils.arityCheck(1, arguments);
+            boolean finished = false;
             if (receiver.visitor != null) {
-                receiver.visitor.visit(HeapLanguageUtils.truffleToHeap(arguments[0]));
+                finished = receiver.visitor.visit(HeapLanguageUtils.truffleToHeap(arguments[0]));
             }
-            return arguments[0];
+            return finished;
         } else {
             throw UnknownIdentifierException.create(member);
         }

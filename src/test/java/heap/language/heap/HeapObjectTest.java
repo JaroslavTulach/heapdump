@@ -11,7 +11,7 @@ public class HeapObjectTest extends HeapLanguageTest {
     @Override
     protected void initJS() {
         // Add a utility method for counting items in an iterator
-        runJS("function count(it) { var c = 0; while(!it.done) { c += 1; it.next(); }; return c; }");
+        runJS("function count(it) { var c = 0; while(it.hasNext()) { c += 1; it.next(); }; return c; }");
     }
 
     @Test

@@ -56,7 +56,7 @@ public class OQLQuery {
     public String buildJS() {
         if (className == null || instanceName == null) {
             // The query is only "select `JS_expression`" - in that case, just eval it
-            return selectExpression;
+            return "{ let result = "+selectExpression+"; print(result); for (r in result) { if (visitor.visit(result[r])) { break }; }}";
         } else {
             // The query is "select `JS_expression` from `class_name` `identifier`
             // visitor is
@@ -66,10 +66,10 @@ public class OQLQuery {
             String resultsIterator;
             if (whereExpression == null) {
                 whereFunction = "";
-                resultsIterator = "while (!iterator.done) { let item = iterator.next(); if (visitor.visit(__select__(item))) { break; }; };";
+                resultsIterator = "while (iterator.hasNext()) { let item = iterator.next(); if (visitor.visit(__select__(item))) { break; }; };";
             } else {
                 whereFunction = "function __where__("+instanceName+") { return "+whereExpression+" };";
-                resultsIterator = "while (!iterator.done) { let item = iterator.next(); if(__where__(item)) { if (visitor.visit(__select__(item))) { break; } } };";
+                resultsIterator = "while (iterator.hasNext()) { let item = iterator.next(); if(__where__(item)) { if (visitor.visit(__select__(item))) { break; } } };";
             }
             return "{" + selectFunction + whereFunction + iteratorConstruction + resultsIterator + "}";
         }

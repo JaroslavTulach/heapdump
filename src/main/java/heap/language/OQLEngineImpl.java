@@ -1,6 +1,7 @@
 package heap.language;
 
 import heap.language.util.HeapLanguageUtils;
+import heap.language.util.VisitorObject;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.Source;
@@ -45,10 +46,11 @@ public class OQLEngineImpl {
             return;
         }
         visitor = (visitor == null) ? OQLEngine.ObjectVisitor.DEFAULT : visitor;
-        ctx.getBindings("js").putMember("visitor", visitor);
+        ctx.getBindings("js").putMember("visitor", new VisitorObject(visitor));
         System.out.println("Query:"+parsed.buildJS());
         Source querySrc = Source.newBuilder("js", parsed.buildJS(), "fn.js").build();
         Value result = ctx.eval(querySrc);
+        // TODO: We can't do this, we have to call the visitor from javascript, because this will pollute it with Value objects.
         if (result.hasMember("done") && result.canInvokeMember("next")) {   // result is an iterator!
             while (!result.getMember("done").as(Boolean.class)) {
                 if (visitor.visit(HeapLanguageUtils.truffleToHeap(result.invokeMember("next")))) {
@@ -64,9 +66,9 @@ public class OQLEngineImpl {
             }
         } else if (parsed.getClassName() == null) { // result is just an object - but we return it only if this effectively "pureJS" query
             // TODO: This needs to be handled better - but how?
-            if (visitor.visit(HeapLanguageUtils.truffleToHeap(result))) {
+            /*if (visitor.visit(HeapLanguageUtils.truffleToHeap(result))) {
                 return;
-            };
+            };*/
         }
     }
 

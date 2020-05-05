@@ -1,9 +1,13 @@
 package heap.language.util;
 
-import com.oracle.truffle.api.interop.*;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import heap.language.HeapLanguage;
-import heap.language.heap.*;
-import org.graalvm.collections.Pair;
+import heap.language.heap.InstanceObject;
+import heap.language.heap.JavaClassObject;
+import heap.language.heap.ObjectArrayObject;
+import heap.language.heap.PrimitiveArrayObject;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.ByteSequence;
 import org.netbeans.lib.profiler.heap.Instance;
@@ -16,8 +20,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Enumeration;
-import java.util.Iterator;
+import java.util.Map;
 
 public class HeapLanguageUtils {
 
@@ -111,7 +114,8 @@ public class HeapLanguageUtils {
         }/* else if (truffleObject instanceof NullValue) {
             return null; TODO
         }*/ else {
-            return truffleObject;
+            // TODO: Is there a better way?
+            return Value.asValue(truffleObject).as(Map.class);
             // If everything else fails, try to convert automatically.
             //return HeapLanguage.asHostObject(truffleObject);
         }
