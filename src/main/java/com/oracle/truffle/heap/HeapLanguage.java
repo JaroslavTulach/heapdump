@@ -312,18 +312,18 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
             INSTANCES.put(SIZE_OF, OQLGlobalSymbols.SizeOf.INSTANCE);
             INSTANCES.put(TO_HTML, OQLGlobalSymbols.ToHtml.INSTANCE);
 
-            INSTANCES.put(CONCAT, OQLGlobalSymbols.Concat.INSTANCE);
-            INSTANCES.put(CONTAINS, OQLGlobalSymbols.Contains.INSTANCE);
-            INSTANCES.put(COUNT, OQLGlobalSymbols.Count.INSTANCE);
-            INSTANCES.put(FILTER, OQLGlobalSymbols.Filter.INSTANCE);
-            INSTANCES.put(LENGTH, OQLGlobalSymbols.Length.INSTANCE);
-            INSTANCES.put(MAP, OQLGlobalSymbols.Map.INSTANCE);
-            INSTANCES.put(MAX, OQLGlobalSymbols.Max.INSTANCE);
-            INSTANCES.put(MIN, OQLGlobalSymbols.Min.INSTANCE);
-            INSTANCES.put(SORT, OQLGlobalSymbols.Sort.INSTANCE);
-            INSTANCES.put(SUM, OQLGlobalSymbols.Sum.INSTANCE);
-            INSTANCES.put(TO_ARRAY, OQLGlobalSymbols.ToArray.INSTANCE);
-            INSTANCES.put(UNIQUE, OQLGlobalSymbols.Unique.INSTANCE);
+            INSTANCES.put(CONCAT, OQLSequenceGlobals.Concat.INSTANCE);
+            INSTANCES.put(CONTAINS, OQLSequenceGlobals.Contains.INSTANCE);
+            INSTANCES.put(COUNT, OQLSequenceGlobals.Count.INSTANCE);
+            INSTANCES.put(FILTER, OQLSequenceGlobals.Filter.INSTANCE);
+            INSTANCES.put(LENGTH, OQLSequenceGlobals.Length.INSTANCE);
+            INSTANCES.put(MAP, OQLSequenceGlobals.Map.INSTANCE);
+            INSTANCES.put(MAX, OQLSequenceGlobals.Max.INSTANCE);
+            INSTANCES.put(MIN, OQLSequenceGlobals.Min.INSTANCE);
+            INSTANCES.put(SORT, OQLSequenceGlobals.Sort.INSTANCE);
+            INSTANCES.put(SUM, OQLSequenceGlobals.Sum.INSTANCE);
+            INSTANCES.put(TO_ARRAY, OQLSequenceGlobals.ToArray.INSTANCE);
+            INSTANCES.put(UNIQUE, OQLSequenceGlobals.Unique.INSTANCE);
 
             INSTANCES.put(SET_SCRIPT_LANGUAGE, BuiltIns.SetScriptLanguage.INSTANCE);
             INSTANCES.put(BIND_GLOBAL_SYMBOLS, BuiltIns.BindGlobalSymbols.INSTANCE);
