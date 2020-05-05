@@ -280,9 +280,11 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         // HeapLanguage.Globals.SYMBOL_NAME
 
         // OQL requested symbols:
+        public static final String ALLOC_TRACE = "allocTrace";
         public static final String CLASS_OF = "classof";
         public static final String TO_HTML = "toHtml";
         public static final String SIZE_OF = "sizeof";
+
         public static final String CONCAT = "concat";
         public static final String CONTAINS = "contains";
         public static final String COUNT = "count";
@@ -301,7 +303,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final String BIND_GLOBAL_SYMBOLS = "bindGlobalSymbols";
 
         private static final Descriptors MEMBERS = Descriptors.properties(
-                CLASS_OF, TO_HTML, SIZE_OF,
+                ALLOC_TRACE, CLASS_OF, TO_HTML, SIZE_OF,
                 CONCAT, CONTAINS, COUNT, FILTER, LENGTH, MAP, MAX, MIN, SORT, SUM, TO_ARRAY, UNIQUE,
                 SET_SCRIPT_LANGUAGE, BIND_GLOBAL_SYMBOLS
         );
@@ -309,6 +311,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final Map<String, TruffleObject> INSTANCES = new HashMap<>();
 
         static {
+            INSTANCES.put(ALLOC_TRACE, OQLGlobalSymbols.AllocTrace.INSTANCE);
             INSTANCES.put(CLASS_OF, OQLGlobalSymbols.ClassOf.INSTANCE);
             INSTANCES.put(SIZE_OF, OQLGlobalSymbols.SizeOf.INSTANCE);
             INSTANCES.put(TO_HTML, OQLGlobalSymbols.ToHtml.INSTANCE);

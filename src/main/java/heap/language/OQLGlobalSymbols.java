@@ -22,6 +22,26 @@ import java.util.LinkedHashSet;
  */
 interface OQLGlobalSymbols {
 
+    @ExportLibrary(InteropLibrary.class)
+    class AllocTrace implements TruffleObject {
+
+        public static final AllocTrace INSTANCE = new AllocTrace();
+
+        private AllocTrace() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") AllocTrace receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") AllocTrace receiver, Object[] arguments) {
+            // TODO: In the original JS implementation, this uses an undefined method, fails, and then defaults to null...
+            return HeapLanguage.NULL;
+        }
+
+    }
+
     /**
      * Returns Class object of a given Java Object.
      */
@@ -66,7 +86,6 @@ interface OQLGlobalSymbols {
         }
 
     }
-
 
     @ExportLibrary(InteropLibrary.class)
     class ToHtml implements TruffleObject {
