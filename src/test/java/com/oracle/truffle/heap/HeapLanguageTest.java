@@ -1,6 +1,5 @@
 package com.oracle.truffle.heap;
 
-import com.oracle.truffle.heap.HeapLanguage;
 import com.oracle.truffle.heap.util.HeapLanguageUtils;
 import org.graalvm.polyglot.*;
 import org.junit.Before;
@@ -24,7 +23,7 @@ public abstract class HeapLanguageTest {
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.SET_SCRIPT_LANGUAGE).execute("js");
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.BIND_GLOBAL_SYMBOLS).execute(ctx.getBindings("js"));
 
-        URL url = getClass().getClassLoader().getResource("heap/language/small_heap.bin");
+        URL url = getClass().getClassLoader().getResource("org/netbeans/modules/profiler/oql/engine/api/impl/truffle/small_heap.bin");
         File heapFile = new File(url.toURI());
         Source heapSrc = Source.newBuilder("heap", HeapLanguageUtils.bytesOf(heapFile), heapFile.getName())
                 .uri(heapFile.toURI())

@@ -1,9 +1,11 @@
 package org.netbeans.modules.profiler.oql.engine.api.impl.truffle;
 
-import org.netbeans.modules.profiler.oql.engine.api.impl.truffle.OQLEngineImpl;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.netbeans.lib.profiler.heap.Instance;
+import org.netbeans.lib.profiler.heap.JavaClass;
+import org.netbeans.modules.profiler.oql.engine.api.OQLEngine.ObjectVisitor;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,10 +14,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.netbeans.lib.profiler.heap.Instance;
-import org.netbeans.lib.profiler.heap.JavaClass;
-import org.netbeans.modules.profiler.oql.engine.api.OQLEngine.ObjectVisitor;
 
 import static org.junit.Assert.*;
 
