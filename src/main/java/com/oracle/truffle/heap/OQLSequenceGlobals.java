@@ -4,13 +4,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.heap.util.HeapLanguageUtils;
-import org.graalvm.collections.Pair;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 /**
  * <p>These functions accept an array/iterator/enumeration and an expression string [or a callback function] as input.
@@ -36,13 +31,13 @@ interface OQLSequenceGlobals {
         }
 
         @ExportMessage
-        static Object execute(@SuppressWarnings("unused") Concat receiver, Object[] arguments) throws ArityException {
-            Interop.checkArity(arguments, 2);
-            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            Iterator<Pair<?, ?>> i1 = Interop.intoIndexedIterator(arguments[0], interop);
-            Iterator<Pair<?, ?>> i2 = Interop.intoIndexedIterator(arguments[1], interop);
+        static Object execute(@SuppressWarnings("unused") Concat receiver, Object[] arguments)
+                throws ArityException, UnsupportedTypeException {
+            Args.checkArity(arguments, 2);
+            Iterator<?> i1 = Args.unwrapIterator(arguments, 0);
+            Iterator<?> i2 = Args.unwrapIterator(arguments, 1);
 
-            Iterator<Object> concatIterator = new Iterator<Object>() {
+            Iterator<?> concatIterator = new Iterator<Object>() {
 
                 @Override
                 public boolean hasNext() {
@@ -52,14 +47,14 @@ interface OQLSequenceGlobals {
                 @Override
                 public Object next() {
                     if (i1.hasNext()) {
-                        return i1.next().getRight();
+                        return i1.next();
                     } else {
-                        return i2.next().getRight();
+                        return i2.next();
                     }
                 }
             };
 
-            return Interop.wrapIterator(concatIterator);
+            return Iterators.exportIterator(concatIterator);
         }
 
     }
@@ -83,13 +78,13 @@ interface OQLSequenceGlobals {
         static Object execute(@SuppressWarnings("unused") Contains receiver, Object[] arguments)
                 throws ArityException, UnsupportedTypeException, UnsupportedMessageException
         {
-            Interop.checkArity(arguments, 2);
+            Args.checkArity(arguments, 2);
             InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            TruffleObject callback = HeapLanguage.resolveCallbackArgument(arguments[1], interop, "it", "index", "array");
-            Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(arguments[0], interop);
+            Iterator<? extends IndexPair<?, ?>> it = Args.unwrapIndexedIterator(arguments, 0);
+            TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "it", "index", "array");
             while (it.hasNext()) {
-                Pair<?, ?> element = it.next();
-                if (Interop.asBoolean(interop.execute(callback, element.getRight(), element.getLeft(), arguments[0]))) {
+                IndexPair<?, ?> element = it.next();
+                if (Types.asBoolean(interop.execute(callback, element.getValue(), element.getIndex(), arguments[0]))) {
                     return Boolean.TRUE;
                 }
             }
@@ -117,17 +112,15 @@ interface OQLSequenceGlobals {
         static Object execute(@SuppressWarnings("unused") Count receiver, Object[] arguments)
                 throws ArityException, UnsupportedTypeException, UnsupportedMessageException
         {
-            if (arguments.length == 1) {
-                return Length.execute(null, arguments);
-            }
-            Interop.checkArity(arguments, 2);
+            Args.checkArityBetween(arguments, 1, 2);
+            if (arguments.length == 1) return Length.execute(null, arguments);
+            Iterator<? extends IndexPair<?, ?>> it = Args.unwrapIndexedIterator(arguments, 0);
+            TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "it", "index", "array");
+            long count = 0;
             InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            TruffleObject callback = HeapLanguage.resolveCallbackArgument(arguments[1], interop, "it", "index", "array");
-            Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(arguments[0], interop);
-            int count = 0;
             while (it.hasNext()) {
-                Pair<?, ?> element = it.next();
-                if (Interop.asBoolean(interop.execute(callback, element.getRight(), element.getLeft(), arguments[0]))) {
+                IndexPair<?, ?> element = it.next();
+                if (Types.asBoolean(interop.execute(callback, element.getValue(), element.getIndex(), arguments[0]))) {
                     count += 1;
                 }
             }
@@ -152,23 +145,23 @@ interface OQLSequenceGlobals {
         }
 
         @ExportMessage
-        static Object execute(@SuppressWarnings("unused") Filter receiver, Object[] arguments) throws ArityException {
-            Interop.checkArity(arguments, 2);
-            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            TruffleObject callback = HeapLanguage.resolveCallbackArgument(arguments[1], interop, "it", "index", "array", "result");
-            Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(arguments[0], interop);
+        static Object execute(@SuppressWarnings("unused") Filter receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArity(arguments, 2);
+            Iterator<? extends IndexPair<?, ?>> it = Args.unwrapIndexedIterator(arguments, 0);
+            TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "it", "index", "array", "result");
 
+            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
             Iterator<Object> filterIterator = new Iterator<Object>() {
 
-                private Pair<?, ?> lastElement = null;
+                private IndexPair<?, ?> lastElement = null;
 
                 private void advance() {
                     if (lastElement != null) return;    // only advance if last element consumed
                     try {
                         while (it.hasNext()) {
-                            Pair<?, ?> element = it.next();
-                            Object isValid = interop.execute(callback, element.getRight(), element.getLeft(), arguments[0], HeapLanguage.asGuestValue(this));
-                            if (Interop.asBoolean(isValid)) {
+                            IndexPair<?, ?> element = it.next();
+                            Object isValid = interop.execute(callback, element.getValue(), element.getIndex(), arguments[0], HeapLanguage.asGuestValue(this));
+                            if (Types.asBoolean(isValid)) {
                                 lastElement = element;
                                 return;
                             }
@@ -186,15 +179,15 @@ interface OQLSequenceGlobals {
 
                 @Override
                 public Object next() {
-                    if (!hasNext()) throw new IllegalStateException("Iterator has no other items.");
-                    Object item = lastElement.getRight();
+                    if (!hasNext()) throw new NoSuchElementException("Iterator has no remaining items.");
+                    Object item = lastElement.getValue();
                     lastElement = null;
                     return item;
                 }
 
             };
 
-            return Interop.wrapIterator(filterIterator);
+            return Iterators.exportIterator(filterIterator);
         }
 
     }
@@ -215,21 +208,19 @@ interface OQLSequenceGlobals {
         }
 
         @ExportMessage
-        static Object execute(@SuppressWarnings("unused") Length receiver, Object[] arguments) throws ArityException, UnsupportedMessageException {
-            Interop.checkArity(arguments, 1);
-            HeapLanguageUtils.arityCheck(1, arguments);
+        static Object execute(@SuppressWarnings("unused") Length receiver, Object[] arguments) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+            Args.checkArity(arguments, 1);
+            // First, try to check array length
+            TruffleObject array = Types.tryAsArray(arguments[0]);
             InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            Object data = arguments[0];
-            if (data instanceof TruffleObject && interop.hasArrayElements(data)) {
-                return interop.getArraySize(data);
-            } else {
-                Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(data, interop);
-                int count = 0;
-                while (it.hasNext()) {
-                    count += 1; it.next();
-                }
-                return count;
+            if (array != null) return interop.getArraySize(array);
+            // If that fails, iterate the object
+            Iterator<?> it = Args.unwrapIterator(arguments, 0);
+            long count = 0;
+            while (it.hasNext()) {
+                count += 1; it.next();
             }
+            return count;
         }
 
     }
@@ -250,12 +241,12 @@ interface OQLSequenceGlobals {
         }
 
         @ExportMessage
-        static Object execute(@SuppressWarnings("unused") Map receiver, Object[] arguments) throws ArityException {
-            Interop.checkArity(arguments, 2);
-            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            Iterator<Pair<?, ?>> items = Interop.intoIndexedIterator(arguments[0], interop);
-            TruffleObject callback = HeapLanguage.resolveCallbackArgument(arguments[1], interop, "it", "index", "array", "result");
+        static Object execute(@SuppressWarnings("unused") Map receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArity(arguments, 2);
+            Iterator<? extends IndexPair<?, ?>> items = Args.unwrapIndexedIterator(arguments, 0);
+            TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "it", "index", "array", "result");
 
+            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
             Iterator<Object> mappedIterator = new Iterator<Object>() {
                 @Override
                 public boolean hasNext() {
@@ -265,15 +256,15 @@ interface OQLSequenceGlobals {
                 @Override
                 public Object next() {
                     try {
-                        Pair<?, ?> item = items.next();
-                        return interop.execute(callback, item.getRight(), item.getLeft(), arguments[0], callback);
+                        IndexPair<?, ?> item = items.next();
+                        return interop.execute(callback, item.getValue(), item.getIndex(), arguments[0], HeapLanguage.asGuestValue(this));
                     } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                        throw new RuntimeException("Cannot map values.", e);
+                        throw new IllegalStateException("Cannot execute map callback.", e);
                     }
                 }
             };
 
-            return Interop.wrapIterator(mappedIterator);
+            return Iterators.exportIterator(mappedIterator);
         }
 
     }
@@ -298,25 +289,24 @@ interface OQLSequenceGlobals {
         static Object execute(@SuppressWarnings("unused") Max receiver, Object[] arguments)
                 throws ArityException, UnsupportedTypeException, UnsupportedMessageException
         {
+            Args.checkArityBetween(arguments, 1, 2);
+            Iterator<?> it = Args.unwrapIterator(arguments, 0);
             Object max = null;
-            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            if (arguments.length == 1) {    // numerical comparison
-                Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(arguments[0], interop);
-                if (it.hasNext()) max = it.next().getRight();
+            if (arguments.length == 1) {
+                if (it.hasNext()) max = it.next();
                 while (it.hasNext()) {
-                    Object element = it.next().getRight();
-                    if (Interop.compareNumeric(max, element) < 0) {
+                    Object element = it.next();
+                    if (Types.compareValues(max, element) < 0) {
                         max = element;
                     }
                 }
             } else {
-                Interop.checkArity(arguments, 2);
-                TruffleObject callback = HeapLanguage.resolveCallbackArgument(arguments[1], interop, "lhs", "rhs");
-                Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(arguments[0], interop);
-                if (it.hasNext()) max = it.next().getRight();
+                InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+                TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "lhs", "rhs");
+                if (it.hasNext()) max = it.next();
                 while (it.hasNext()) {
-                    Object element = it.next().getRight();
-                    if (Interop.asBoolean(interop.execute(callback, element, max))) {   // true if lhs > rhs
+                    Object element = it.next();
+                    if (Types.asBoolean(interop.execute(callback, element, max))) { // true if lhs > rhs
                         max = element;
                     }
                 }
@@ -344,27 +334,25 @@ interface OQLSequenceGlobals {
 
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") Min receiver, Object[] arguments)
-                throws ArityException, UnsupportedTypeException, UnsupportedMessageException
-        {
+                throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+            Args.checkArityBetween(arguments, 1, 2);
+            Iterator<?> it = Args.unwrapIterator(arguments, 0);
             Object min = null;
-            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            if (arguments.length == 1) {    // numerical comparison
-                Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(arguments[0], interop);
-                if (it.hasNext()) min = it.next().getRight();
+            if (arguments.length == 1) {
+                if (it.hasNext()) min = it.next();
                 while (it.hasNext()) {
-                    Object element = it.next().getRight();
-                    if (Interop.compareNumeric(min, element) > 0) {
+                    Object element = it.next();
+                    if (Types.compareValues(min, element) > 0) {    // min > element
                         min = element;
                     }
                 }
             } else {
-                Interop.checkArity(arguments, 2);
-                TruffleObject callback = HeapLanguage.resolveCallbackArgument(arguments[1], interop, "lhs", "rhs");
-                Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(arguments[0], interop);
-                if (it.hasNext()) min = it.next().getRight();
+                InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+                TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "lhs", "rhs");
+                if (it.hasNext()) min = it.next();
                 while (it.hasNext()) {
-                    Object element = it.next().getRight();
-                    if (Interop.asBoolean(interop.execute(callback, element, min))) {   // true if lhs < rhs
+                    Object element = it.next();
+                    if (Types.asBoolean(interop.execute(callback, element, min))) { // true if lhs < rhs
                         min = element;
                     }
                 }
@@ -391,25 +379,20 @@ interface OQLSequenceGlobals {
 
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") Sort receiver, Object[] arguments)
-                throws ArityException
-        {
-            Interop.checkArityOptional(arguments, 1, 2);
-            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            ArrayList<Object> items = new ArrayList<>();
-            Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(arguments[0], interop);
-            while (it.hasNext()) {
-                items.add(it.next().getRight());
-            }
+                throws ArityException, UnsupportedTypeException {
+            Args.checkArityBetween(arguments, 1, 2);
+            List<?> items = Args.unwrapList(arguments, 0);
             Comparator<Object> cmp;
-            if (arguments.length == 1) {    // use numerical comparison
-                cmp = Interop::compareNumeric;
+            if (arguments.length == 1) {    // use default comparison
+                cmp = Types::compareValues;
             } else {
-                TruffleObject callback = HeapLanguage.resolveCallbackArgument(arguments[1], interop, "lhs", "rhs");
+                InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+                TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "lhs", "rhs");
                 cmp = (o1, o2) -> {
                     try {
-                        return (int) Interop.asIntegralNumber(interop.execute(callback, o1, o2));
+                        return (int) Types.asIntegralNumber(interop.execute(callback, o1, o2));
                     } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                        throw new IllegalArgumentException("Cannot compare values "+o1+" and "+o2, e);
+                        throw new IllegalStateException("Cannot execute compare callback.", e);
                     }
                 };
             }
@@ -440,35 +423,31 @@ interface OQLSequenceGlobals {
         static Object execute(@SuppressWarnings("unused") Sum receiver, Object[] arguments)
                 throws ArityException, UnsupportedTypeException, UnsupportedMessageException
         {
-            Interop.checkArityOptional(arguments, 1, 2);
+            Args.checkArityBetween(arguments, 1, 2);
             InteropLibrary interop = InteropLibrary.getFactory().getUncached();
             long longSum = 0; boolean longValid = true;
             double doubleSum = 0.0; // we keep two sums, because if long works, it will be more precise
-            Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(arguments[0], interop);
-            TruffleObject callback = arguments.length == 1 ? null : HeapLanguage.resolveCallbackArgument(arguments[1], interop, "it", "index", "array");
+            Iterator<? extends IndexPair<?, ?>> it = Args.unwrapIndexedIterator(arguments, 0);
+            TruffleObject callback = arguments.length == 1 ? null : HeapLanguage.unwrapCallbackArgument(arguments, 1, "it", "index", "array");
             while (it.hasNext()) {
                 Object number;
                 if (callback == null) {
-                    number = it.next().getRight();
+                    number = it.next().getValue();
                 } else {
-                    Pair<?, ?> element = it.next();
-                    number = interop.execute(callback, element.getRight(), element.getLeft(), arguments[0]);
+                    IndexPair<?, ?> element = it.next();
+                    number = interop.execute(callback, element.getValue(), element.getIndex(), arguments[0]);
                 }
                 if (longValid) {
-                    Long lValue = Interop.tryAsIntegralNumber(number);
+                    Long lValue = Types.tryAsIntegralNumber(number);
                     if (lValue != null) {
                         longSum += lValue;
                         doubleSum += lValue;
                         continue;
                     }
-                } // if conversion to long failed, continue here
-                longValid = false;
-                Double dValue = Interop.tryAsFloatingPointNumber(number);
-                if (dValue != null) {
-                    doubleSum += dValue;
-                } else {
-                    throw new IllegalArgumentException("Cannot convert "+number+" to number.");
                 }
+                // if conversion to long failed, continue with double only
+                longValid = false;
+                doubleSum += Types.asFloatingPointNumber(number);
             }
 
             return longValid ? longSum : doubleSum;
@@ -492,27 +471,10 @@ interface OQLSequenceGlobals {
         }
 
         @ExportMessage
-        static Object execute(@SuppressWarnings("unused") ToArray receiver, Object[] arguments) throws ArityException {
-            Interop.checkArity(arguments, 1);
-            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            Object item = arguments[0];
-            if (interop.hasArrayElements(item)) {
-                return item;    // if already, array, just return
-            } else {
-                // TODO: indexed iterator is wasteful here and in unique (maybe also other places?)... simplify...
-                Iterator<Pair<?, ?>> it = Interop.intoIndexedIterator(receiver, interop);
-                return Interop.wrapIterator(new Iterator<Object>() {
-                    @Override
-                    public boolean hasNext() {
-                        return it.hasNext();
-                    }
-
-                    @Override
-                    public Object next() {
-                        return it.next().getRight();
-                    }
-                });
-            }
+        static Object execute(@SuppressWarnings("unused") ToArray receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArity(arguments, 1);
+            List<?> items = Args.unwrapList(arguments, 0);
+            return Interop.wrapArray(items.toArray());
         }
 
     }
@@ -533,17 +495,16 @@ interface OQLSequenceGlobals {
         }
 
         @ExportMessage
-        static Object execute(@SuppressWarnings("unused") Unique receiver, Object[] arguments) throws ArityException {
-            Interop.checkArity(arguments, 1);
-            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            return Interop.wrapArray(unique(Interop.intoIndexedIterator(arguments[0], interop)));
+        static Object execute(@SuppressWarnings("unused") Unique receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArity(arguments, 1);
+            return Interop.wrapArray(unique(Args.unwrapIterator(arguments, 0)));
         }
 
         @CompilerDirectives.TruffleBoundary
-        private static Object[] unique(Iterator<Pair<?, ?>> it) {
+        private static Object[] unique(Iterator<?> it) {
             LinkedHashSet<Object> set = new LinkedHashSet<>();
             while (it.hasNext()) {
-                set.add(it.next().getRight());
+                set.add(it.next());
             }
             return set.toArray();
         }

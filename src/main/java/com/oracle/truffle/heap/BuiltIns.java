@@ -32,7 +32,7 @@ interface BuiltIns {
 
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") BindGlobalSymbols receiver, Object[] arguments) throws ArityException {
-            Interop.checkArity(arguments, 1);
+            Args.checkArity(arguments, 1);
             TruffleObject bindings = (TruffleObject) arguments[0];
             BindGlobalSymbols.registerSymbols(bindings, InteropLibrary.getFactory().getUncached());
             return bindings;
@@ -66,8 +66,8 @@ interface BuiltIns {
 
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") SetScriptLanguage receiver, Object[] arguments) throws ArityException {
-            Interop.checkArity(arguments, 1);
-            String language = Interop.isNull(arguments[0]) ? null : Interop.asString(arguments[0]);
+            Args.checkArity(arguments, 1);
+            String language = Types.isNull(arguments[0]) ? null : Types.asString(arguments[0]);
             HeapLanguage.setScriptLanguage(language);
             return HeapLanguage.NULL;
         }

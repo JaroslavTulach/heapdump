@@ -134,31 +134,19 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
      * <p>Resolve callback/string expression arguments. If the argument is already executable, just return it.
      * If not, try to parse it as executable string expression.</p>
      */
-    static TruffleObject resolveCallbackArgument(@NonNull Object argument, InteropLibrary interop, String... argNames) {
-        if (interop.isExecutable(argument)) {
-            return (TruffleObject) argument;
-        }
-        String expression = null;
-        if (argument instanceof String) {
-            expression = (String) argument;
-        } else if (interop.isString(argument)) {
-            try {
-                expression = interop.asString(argument);
-            } catch (UnsupportedMessageException e) {   // should be unreachable
-                throw new IllegalStateException("Cannot convert "+argument+" to string.", e);
-            }
-        }
-        if (expression != null) {
-            return parseArgumentExpression(expression, argNames);
-        } else {
-            throw new IllegalArgumentException("Expected callback function or executable string expression. Got "+argument);
-        }
+    static TruffleObject unwrapCallbackArgument(Object[] arguments, int argIndex, String... argNames) throws UnsupportedTypeException {
+        Object argument = arguments[argIndex];
+        TruffleObject executable = Types.tryAsExecutable(argument);
+        if (executable != null) return executable;
+        String expression = Types.tryAsString(argument);
+        if (expression != null) return parseArgumentExpression(expression, argNames);
+        throw UnsupportedTypeException.create(arguments, "Expected executable or string expression as argument "+(argIndex+1)+", but found "+argument+".");
     }
 
     /**
-     * Convert given Java object into a HeapLanguage guest value.
+     * <p>Convert given Java object into a truffle guest value.</p>
      */
-    public static Object asGuestValue(Object value) {   // TODO: Move this somewhere else?
+    public static Object asGuestValue(Object value) {
         return HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment().asGuestValue(value);
     }
 
@@ -179,7 +167,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
     }
 
     @Override
-    protected Iterable<Scope> findTopScopes(State context) {
+    protected Iterable<Scope> findTopScopes(State context) {    // export globals into our bindings
         return Collections.singletonList(Scope.newBuilder("global", new Globals()).build());
     }
 

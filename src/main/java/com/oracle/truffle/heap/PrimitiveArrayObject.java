@@ -84,7 +84,7 @@ public class PrimitiveArrayObject extends InstanceWrapper<PrimitiveArrayInstance
     @ExportMessage
     static Object invokeMember(PrimitiveArrayObject receiver, String member, Object[] arguments) throws ArityException, UnknownIdentifierException {
         if (InstanceObject.TO_STRING.equals(member)) {
-            HeapLanguageUtils.arityCheck(0, arguments);
+            Args.checkArity(arguments, 0);
             return InstanceWrapper.instanceString(receiver);
         } else {
             throw UnknownIdentifierException.create(member);

@@ -73,7 +73,7 @@ public class InstanceObject extends InstanceWrapper<Instance> implements Truffle
     @ExportMessage
     static Object invokeMember(InstanceObject receiver, String member, Object[] arguments) throws ArityException, UnknownIdentifierException {
         if (TO_STRING.equals(member)) {
-            HeapLanguageUtils.arityCheck(0, arguments);
+            Args.checkArity(arguments, 0);
             return InstanceWrapper.instanceString(receiver);
         } else {
             throw UnknownIdentifierException.create(member);

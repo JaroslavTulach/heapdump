@@ -82,7 +82,7 @@ public class ObjectArrayObject extends InstanceWrapper<ObjectArrayInstance> impl
     @ExportMessage
     static Object invokeMember(ObjectArrayObject receiver, String member, Object[] arguments) throws ArityException, UnknownIdentifierException {
         if (InstanceObject.TO_STRING.equals(member)) {
-            HeapLanguageUtils.arityCheck(0, arguments);
+            Args.checkArity(arguments, 0);
             return InstanceWrapper.instanceString(receiver);
         } else {
             throw UnknownIdentifierException.create(member);

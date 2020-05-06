@@ -38,7 +38,7 @@ public class VisitorObject implements TruffleObject {
     static Object invokeMember(VisitorObject receiver, String member, Object[] arguments)
             throws UnknownIdentifierException, ArityException {
         if (VISIT.equals(member)) {
-            HeapLanguageUtils.arityCheck(1, arguments);
+            Args.checkArity(arguments, 1);
             boolean finished = false;
             if (receiver.visitor != null) {
                 finished = receiver.visitor.visit(HeapLanguageUtils.truffleToHeap(arguments[0]));

@@ -58,7 +58,7 @@ interface OQLGlobalSymbols {
 
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") ClassOf receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
-            HeapLanguageUtils.arityCheck(1, arguments);
+            Args.checkArity(arguments, 1);
             InstanceWrapper<?> instance = HeapLanguageUtils.unwrapArgument(arguments, 0, InstanceWrapper.class);
             return new JavaClassObject(instance.getInstance().getJavaClass());
         }
@@ -79,7 +79,7 @@ interface OQLGlobalSymbols {
 
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") SizeOf receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
-            HeapLanguageUtils.arityCheck(1, arguments);
+            Args.checkArity(arguments, 1);
             InstanceWrapper<?> instance = HeapLanguageUtils.unwrapArgument(arguments, 0, InstanceWrapper.class);
             return instance.getInstance().getSize();
         }
@@ -104,7 +104,7 @@ interface OQLGlobalSymbols {
                 Object[] arguments,
                 @CachedLibrary(limit = "3") InteropLibrary call
         ) throws ArityException, UnsupportedMessageException {
-            HeapLanguageUtils.arityCheck(1, arguments);
+            Args.checkArity(arguments, 1);
             Object arg = arguments[0];
             // TODO: Is there an implicit "toString" conversion in truffle?
             return toHtml(arg, call);

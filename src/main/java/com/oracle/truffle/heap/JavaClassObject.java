@@ -96,7 +96,7 @@ public class JavaClassObject implements TruffleObject {
 
     /* Tests whether given class is direct or indirect subclass of this class or not. */
     private Object invoke_isSubclassOf(Object[] arguments) throws ArityException, UnsupportedTypeException {
-        HeapLanguageUtils.arityCheck(1, arguments);
+        Args.checkArity(arguments, 1);
         if (!(arguments[0] instanceof JavaClassObject)) {
             throw UnsupportedTypeException.create(arguments, "Expected Java Class instance.");
         }
@@ -106,7 +106,7 @@ public class JavaClassObject implements TruffleObject {
 
     /* Tests whether given Class is direct or indirect superclass of this class or not. */
     private Object invoke_isSuperclassOf(Object[] arguments) throws ArityException, UnsupportedTypeException {
-        HeapLanguageUtils.arityCheck(1, arguments);
+        Args.checkArity(arguments, 1);
         if (!(arguments[0] instanceof JavaClassObject)) {
             throw UnsupportedTypeException.create(arguments, "Expected Java Class instance.");
         }
@@ -126,7 +126,7 @@ public class JavaClassObject implements TruffleObject {
 
     /* Returns array of direct and indirect subclasses. */
     private Object invoke_subclasses(Object[] arguments) throws ArityException {
-        HeapLanguageUtils.arityCheck(0, arguments);
+        Args.checkArity(arguments, 0);
         //noinspection unchecked
         Collection<JavaClass> subClasses = this.clazz.getSubClasses();
         JavaClassObject[] items = new JavaClassObject[subClasses.size()];
@@ -140,7 +140,7 @@ public class JavaClassObject implements TruffleObject {
 
     /* Returns array of direct and indirect superclasses. */
     private Object invoke_superclasses(Object[] arguments) throws ArityException {
-        HeapLanguageUtils.arityCheck(0, arguments);
+        Args.checkArity(arguments, 0);
         ArrayList<JavaClassObject> superClasses = new ArrayList<>();
         JavaClass superClass = this.clazz.getSuperClass();
         while (superClass != null) {

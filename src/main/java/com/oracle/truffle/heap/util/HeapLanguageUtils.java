@@ -43,15 +43,6 @@ public class HeapLanguageUtils {
     }
 
     /**
-     * Utility method for checking arity of function arguments.
-     */
-    public static void arityCheck(int expected, Object[] arguments) throws ArityException {
-        if (arguments.length != expected) {
-            throw ArityException.create(expected, arguments.length);
-        }
-    }
-
-    /**
      * Read an argument of the expected type from the given arguments array. Throws when argument does not have
      * the expected type.
      */
