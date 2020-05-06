@@ -1,8 +1,7 @@
 package com.oracle.truffle.api.interop;
 
-import com.oracle.truffle.api.interop.MemberDescriptor;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 public class MemberDescriptorTest {

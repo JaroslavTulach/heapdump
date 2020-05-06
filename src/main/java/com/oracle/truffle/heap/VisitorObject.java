@@ -1,10 +1,13 @@
-package com.oracle.truffle.heap.util;
+package com.oracle.truffle.heap;
 
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import org.graalvm.polyglot.Value;
 import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.modules.profiler.oql.engine.api.OQLEngine;
+
+import java.util.Map;
 
 @ExportLibrary(InteropLibrary.class)
 public class VisitorObject implements TruffleObject {
@@ -41,7 +44,14 @@ public class VisitorObject implements TruffleObject {
             Args.checkArity(arguments, 1);
             boolean finished = false;
             if (receiver.visitor != null) {
-                finished = receiver.visitor.visit(HeapLanguageUtils.truffleToHeap(arguments[0]));
+                Object value = arguments[0];
+                // This is a heap language object, just unwrap it, keep primitive values and try to convert everything else to map...
+                if (Types.isNull(value)) value = null;
+                else if (value instanceof ObjectInstance) value = ((ObjectInstance) value).getInstance();
+                else if (value instanceof ObjectJavaClass) value = ((ObjectJavaClass) value).getJavaClass();
+                else if (value instanceof ObjectHeap) value = ((ObjectHeap) value).getHeap();
+                else if (!Types.isPrimitiveValue(value)) value = Value.asValue(value).as(Map.class);
+                finished = receiver.visitor.visit(value);
             }
             return finished;
         } else {

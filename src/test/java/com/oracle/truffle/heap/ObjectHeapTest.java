@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class HeapObjectTest extends HeapLanguageTest {
+public class ObjectHeapTest extends HeapLanguageTest {
 
     @Override
     protected void initJS() {

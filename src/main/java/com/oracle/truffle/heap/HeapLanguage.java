@@ -15,6 +15,7 @@ import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.HeapFactory;
+import org.netbeans.lib.profiler.heap.JavaClass;
 
 import java.io.File;
 import java.io.IOException;
@@ -144,6 +145,45 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
     }
 
     /**
+     * <p>Resolve an object id argument. Object id can be either a numeric value or, it can be a string.</p>
+     */
+    static long unwrapObjectIdArgument(Object[] arguments, int argIndex) throws UnsupportedTypeException {
+        Object argument = arguments[argIndex];
+        Long id = Types.tryAsIntegralNumber(argument);
+        if (id == null) {
+            String stringId = Types.tryAsString(argument);
+            try {   // throws number format exception even if stringId is null...
+                id = Long.parseLong(stringId);
+            } catch (NumberFormatException e) {
+                // do nothing
+            }
+        }
+        if (id != null) return id; else {
+            throw UnsupportedTypeException.create(arguments, "Expected object id as argument "+(argIndex+1)+", but got "+argument+".");
+        }
+    }
+
+    /**
+     * <p>Resolve a {@link JavaClass} argument. This can be either a direct object, or a string reference into
+     * the list of classes on the heap.</p>
+     */
+    static JavaClass unwrapJavaClassArgument(Object[] arguments, int argIndex, Heap heap) throws UnsupportedTypeException {
+        Object argument = arguments[argIndex];
+        if (argument instanceof ObjectJavaClass) {
+            return ((ObjectJavaClass) argument).getJavaClass();
+        } else {
+            String className = Types.tryAsString(argument);
+            if (className != null) {
+                JavaClass found = HeapUtils.findClass(heap, className);
+                if (found == null) throw new IllegalArgumentException("Unknown java class: "+className+".");
+                return found;
+            } else {
+                throw UnsupportedTypeException.create(arguments, "Expected java class as argument "+(argIndex+1)+", but found "+argument+".");
+            }
+        }
+    }
+
+    /**
      * <p>Convert given Java object into a truffle guest value.</p>
      */
     public static Object asGuestValue(Object value) {
@@ -204,7 +244,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public Object execute(VirtualFrame frame) {
             try {
                 Heap heap = HeapFactory.createHeap(file);
-                return new HeapObject(heap);
+                return new ObjectHeap(heap);
             } catch (IOException e) {
                 throw new RuntimeException("Error while reading heap dump.", e);
             }

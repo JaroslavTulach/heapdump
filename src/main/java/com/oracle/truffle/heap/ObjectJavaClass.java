@@ -4,9 +4,8 @@ import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.interop.MemberDescriptor;
-import com.oracle.truffle.heap.util.HeapLanguageUtils;
-import com.oracle.truffle.api.interop.ReadOnlyArray;
 import org.netbeans.api.annotations.common.NonNull;
+import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.lib.profiler.heap.Field;
 import org.netbeans.lib.profiler.heap.JavaClass;
 
@@ -18,7 +17,13 @@ import java.util.List;
  * A truffle object wrapper around {@link JavaClass}, implementing the API given by the OQL specification.
  */
 @ExportLibrary(InteropLibrary.class)
-public class JavaClassObject implements TruffleObject {
+public final class ObjectJavaClass implements TruffleObject {
+
+    public static TruffleObject create(@NullAllowed JavaClass clazz) {
+        if (clazz == null) return HeapLanguage.NULL; else {
+            return new ObjectJavaClass(clazz);
+        }
+    }
 
     // Constants for member names
     private static final String NAME = "name";
@@ -43,7 +48,7 @@ public class JavaClassObject implements TruffleObject {
     @NonNull
     private final JavaClass clazz;
 
-    public JavaClassObject(@NonNull JavaClass clazz) {
+    private ObjectJavaClass(@NonNull JavaClass clazz) {
         this.clazz = clazz;
     }
 
@@ -57,31 +62,31 @@ public class JavaClassObject implements TruffleObject {
     }
 
     /* Class object for super class (or null if java.lang.Object). */
-    private Object read_superclass() {
+    private TruffleObject read_superclass() {
         JavaClass superclass = this.clazz.getSuperClass();
-        return superclass == null ? HeapLanguage.NULL : new JavaClassObject(superclass);
+        return superclass == null ? HeapLanguage.NULL : new ObjectJavaClass(superclass);
     }
 
     /* Name, value pairs for static fields of the Class. */
-    private Object read_statics() {
-        return new StaticsObject(this.clazz);
+    private TruffleObject read_statics() {
+        return ObjectStatics.create(this.clazz);
     }
 
-    /* Array of field heap. Field heap have name, signature properties. */
-    private Object read_fields() {
+    /* Array of field objects. Field objects have name and signature properties. */
+    private TruffleObject read_fields() {
         //noinspection unchecked
         List<Field> fields = clazz.getFields();
         Object[] items = new Object[fields.size()];
         for (int i = 0; i < fields.size(); i++) {
             Field field = fields.get(i);
-            items[i] = new FieldDescriptorObject(field.getName(), field.getType().getName());
+            items[i] = new ObjectFieldDescriptor(field.getName(), field.getType().getName());
         }
-        return new ReadOnlyArray(items);
+        return Interop.wrapArray(items);
     }
 
     /* ClassLoader object that loaded this class. */
-    private Object read_loader() {
-        return HeapLanguageUtils.heapToTruffle(this.clazz.getClassLoader());
+    private TruffleObject read_loader() {
+        return ObjectInstance.create(this.clazz.getClassLoader());
     }
 
     /* Signers that signed this class. */
@@ -97,21 +102,15 @@ public class JavaClassObject implements TruffleObject {
     /* Tests whether given class is direct or indirect subclass of this class or not. */
     private Object invoke_isSubclassOf(Object[] arguments) throws ArityException, UnsupportedTypeException {
         Args.checkArity(arguments, 1);
-        if (!(arguments[0] instanceof JavaClassObject)) {
-            throw UnsupportedTypeException.create(arguments, "Expected Java Class instance.");
-        }
-
-        return isSubclassOf(this.clazz, ((JavaClassObject) arguments[0]).clazz);
+        ObjectJavaClass argument = Args.unwrapInstance(arguments, 0, ObjectJavaClass.class);
+        return isSubclassOf(this.clazz, argument.clazz);
     }
 
     /* Tests whether given Class is direct or indirect superclass of this class or not. */
     private Object invoke_isSuperclassOf(Object[] arguments) throws ArityException, UnsupportedTypeException {
         Args.checkArity(arguments, 1);
-        if (!(arguments[0] instanceof JavaClassObject)) {
-            throw UnsupportedTypeException.create(arguments, "Expected Java Class instance.");
-        }
-
-        return isSubclassOf(((JavaClassObject) arguments[0]).clazz, this.clazz);
+        ObjectJavaClass argument = Args.unwrapInstance(arguments, 0, ObjectJavaClass.class);
+        return isSubclassOf(argument.clazz, this.clazz);
     }
 
     private static boolean isSubclassOf(JavaClass child, JavaClass parent) {
@@ -129,52 +128,52 @@ public class JavaClassObject implements TruffleObject {
         Args.checkArity(arguments, 0);
         //noinspection unchecked
         Collection<JavaClass> subClasses = this.clazz.getSubClasses();
-        JavaClassObject[] items = new JavaClassObject[subClasses.size()];
+        ObjectJavaClass[] items = new ObjectJavaClass[subClasses.size()];
         int i = 0;
         for (JavaClass subClass : subClasses) {
-            items[i] = new JavaClassObject(subClass);
+            items[i] = new ObjectJavaClass(subClass);
             i += 1;
         }
-        return new ReadOnlyArray(items);
+        return Interop.wrapArray(items);
     }
 
     /* Returns array of direct and indirect superclasses. */
     private Object invoke_superclasses(Object[] arguments) throws ArityException {
         Args.checkArity(arguments, 0);
-        ArrayList<JavaClassObject> superClasses = new ArrayList<>();
+        ArrayList<ObjectJavaClass> superClasses = new ArrayList<>();
         JavaClass superClass = this.clazz.getSuperClass();
         while (superClass != null) {
-            superClasses.add(new JavaClassObject(superClass));
+            superClasses.add(new ObjectJavaClass(superClass));
             superClass = superClass.getSuperClass();
         }
-        return new ReadOnlyArray(superClasses.toArray(new JavaClassObject[0]));
+        return Interop.wrapArray(superClasses.toArray());
     }
 
     @ExportMessage
-    static boolean hasMembers(@SuppressWarnings("unused") JavaClassObject receiver) {
+    static boolean hasMembers(@SuppressWarnings("unused") ObjectJavaClass receiver) {
         return true;
     }
 
     @ExportMessage
     static Object getMembers(
-            @SuppressWarnings("unused") JavaClassObject receiver,
+            @SuppressWarnings("unused") ObjectJavaClass receiver,
             @SuppressWarnings("unused") boolean includeInternal
     ) {
         return MEMBERS;
     }
 
     @ExportMessage
-    static boolean isMemberInvocable(@SuppressWarnings("unused") JavaClassObject receiver, String member) {
+    static boolean isMemberInvocable(@SuppressWarnings("unused") ObjectJavaClass receiver, String member) {
         return MEMBERS.hasFunction(member);
     }
 
     @ExportMessage
-    static boolean isMemberReadable(@SuppressWarnings("unused") JavaClassObject receiver, String member) {
+    static boolean isMemberReadable(@SuppressWarnings("unused") ObjectJavaClass receiver, String member) {
         return MEMBERS.hasProperty(member);
     }
 
     @ExportMessage
-    static Object readMember(JavaClassObject receiver, String member) throws UnknownIdentifierException {
+    static Object readMember(ObjectJavaClass receiver, String member) throws UnknownIdentifierException {
         switch (member) {
             case NAME:
                 return receiver.read_name();
@@ -196,7 +195,7 @@ public class JavaClassObject implements TruffleObject {
     }
 
     @ExportMessage
-    static Object invokeMember(JavaClassObject receiver, String member, Object[] arguments) throws UnknownIdentifierException, ArityException, UnsupportedTypeException {
+    static Object invokeMember(ObjectJavaClass receiver, String member, Object[] arguments) throws UnknownIdentifierException, ArityException, UnsupportedTypeException {
         switch (member) {
             case IS_SUBCLASS_OF:
                 return receiver.invoke_isSubclassOf(arguments);

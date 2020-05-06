@@ -10,8 +10,30 @@ import java.util.List;
 public final class Args {
     private Args() {}
 
+    public static <T extends TruffleObject> T unwrapInstance(Object[] arguments, int argIndex, Class<T> clazz) throws UnsupportedTypeException {
+        Object argument = arguments[argIndex];
+        if (clazz.isInstance(argument)) {
+            return clazz.cast(argument);
+        }
+        throw UnsupportedTypeException.create(arguments, "Expected instance of "+clazz+" as argument "+(argIndex+1)+", but found "+argument+".");
+    }
+
     public static List<?> unwrapList(Object[] arguments, int argIndex) throws UnsupportedTypeException {
         return unwrapList(arguments, argIndex, InteropLibrary.getFactory().getUncached());
+    }
+
+    public static boolean unwrapBoolean(Object[] arguments, int argIndex) throws UnsupportedTypeException {
+        Boolean value = Types.tryAsBoolean(arguments[argIndex]);
+        if (value != null) return value; else {
+            throw UnsupportedTypeException.create(arguments, "Expected boolean as argument "+(argIndex+1)+", but found "+arguments[argIndex]+".");
+        }
+    }
+
+    public static String unwrapString(Object[] arguments, int argIndex) throws UnsupportedTypeException {
+        String value = Types.tryAsString(arguments[argIndex]);
+        if (value != null) return value; else {
+            throw UnsupportedTypeException.create(arguments, "Expected String as argument "+(argIndex+1)+", but found "+arguments[argIndex]+".");
+        }
     }
 
     public static List<?> unwrapList(Object[] arguments, int argIndex, InteropLibrary interop) throws UnsupportedTypeException {
@@ -39,6 +61,10 @@ public final class Args {
         }
 
         throw UnsupportedTypeException.create(arguments, "Expected array/iterable as argument "+(argIndex+1)+", but found "+argument+".");
+    }
+
+    public static TruffleObject unwrapExecutable(Object[] arguments, int argIndex) throws UnsupportedTypeException {
+        return unwrapExecutable(arguments, argIndex, InteropLibrary.getFactory().getUncached());
     }
 
     public static TruffleObject unwrapExecutable(Object[] arguments, int argIndex, InteropLibrary interop) throws UnsupportedTypeException {

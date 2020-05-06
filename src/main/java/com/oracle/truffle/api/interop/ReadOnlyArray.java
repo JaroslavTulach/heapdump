@@ -11,7 +11,7 @@ import com.oracle.truffle.api.library.ExportMessage;
  * all objects in the array are valid interop instances.</p>
  */
 @ExportLibrary(InteropLibrary.class)
-public final class ReadOnlyArray implements TruffleObject {
+final class ReadOnlyArray implements TruffleObject {
 
     private final Object[] values;
 

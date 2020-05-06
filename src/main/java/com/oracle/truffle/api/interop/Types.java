@@ -11,6 +11,12 @@ import org.netbeans.api.annotations.common.NullAllowed;
 public final class Types {
     private Types() {}
 
+    public static boolean isPrimitiveValue(Object o) {
+        return o instanceof Boolean || o instanceof Byte || o instanceof Short ||
+                o instanceof Integer || o instanceof Long || o instanceof Float ||
+                o instanceof Double || o instanceof Character || o instanceof String;
+    }
+
     public static boolean isNull(Object obj) {
         return isNull(obj, InteropLibrary.getFactory().getUncached());
     }
@@ -67,6 +73,14 @@ public final class Types {
     public static Integer tryCompareCharacterValues(Object lhs, Object rhs) {
         if (!(lhs instanceof Character && rhs instanceof Character)) return null; else {
             return Character.compare((Character) lhs, (Character) rhs);
+        }
+    }
+
+    public static <T extends TruffleObject> T tryAsInstance(Object value, Class<T> clazz) {
+        if (clazz.isInstance(value)) {
+            return clazz.cast(value);
+        } else {
+            return null;
         }
     }
 

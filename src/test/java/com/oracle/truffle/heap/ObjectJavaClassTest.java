@@ -5,7 +5,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class JavaClassObjectTest extends HeapLanguageTest {
+public class ObjectJavaClassTest extends HeapLanguageTest {
 
     @Before
     public void initVars() {

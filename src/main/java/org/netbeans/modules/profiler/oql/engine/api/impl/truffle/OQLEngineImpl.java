@@ -2,7 +2,7 @@ package org.netbeans.modules.profiler.oql.engine.api.impl.truffle;
 
 import com.oracle.truffle.heap.HeapLanguage;
 import com.oracle.truffle.heap.util.HeapLanguageUtils;
-import com.oracle.truffle.heap.util.VisitorObject;
+import com.oracle.truffle.heap.VisitorObject;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.Source;
@@ -50,27 +50,7 @@ public class OQLEngineImpl {
         ctx.getBindings("js").putMember("visitor", new VisitorObject(visitor));
         System.out.println("Query:"+parsed.buildJS());
         Source querySrc = Source.newBuilder("js", parsed.buildJS(), "fn.js").build();
-        Value result = ctx.eval(querySrc);
-        // TODO: We can't do this, we have to call the visitor from javascript, because this will pollute it with Value objects.
-        if (result.hasMember("done") && result.canInvokeMember("next")) {   // result is an iterator!
-            while (!result.getMember("done").as(Boolean.class)) {
-                if (visitor.visit(HeapLanguageUtils.truffleToHeap(result.invokeMember("next")))) {
-                    return;
-                }
-            }
-        } else if (result.hasArrayElements()) {    // result is an array
-            int length = (int) result.getArraySize();
-            for (int i=0; i < length; i++) {
-                if (visitor.visit(HeapLanguageUtils.truffleToHeap(result.getArrayElement(i)))) {
-                    return;
-                }
-            }
-        } else if (parsed.getClassName() == null) { // result is just an object - but we return it only if this effectively "pureJS" query
-            // TODO: This needs to be handled better - but how?
-            /*if (visitor.visit(HeapLanguageUtils.truffleToHeap(result))) {
-                return;
-            };*/
-        }
+        ctx.eval(querySrc);
     }
 
     private OQLQuery parseQuery(String query) throws OQLException {

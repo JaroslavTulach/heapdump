@@ -147,42 +147,21 @@ interface OQLSequenceGlobals {
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") Filter receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
             Args.checkArity(arguments, 2);
-            Iterator<? extends IndexPair<?, ?>> it = Args.unwrapIndexedIterator(arguments, 0);
+            //noinspection unchecked
+            Iterator<IndexPair<?, ?>> it = (Iterator<IndexPair<?, ?>>) Args.unwrapIndexedIterator(arguments, 0);
             TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "it", "index", "array", "result");
 
             InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            Iterator<Object> filterIterator = new Iterator<Object>() {
+            Iterator<Object> filterIterator = new IteratorFilter<IndexPair<?, ?>>(it) {
 
-                private IndexPair<?, ?> lastElement = null;
-
-                private void advance() {
-                    if (lastElement != null) return;    // only advance if last element consumed
+                @Override
+                public Object check(IndexPair<?, ?> item) {
                     try {
-                        while (it.hasNext()) {
-                            IndexPair<?, ?> element = it.next();
-                            Object isValid = interop.execute(callback, element.getValue(), element.getIndex(), arguments[0], HeapLanguage.asGuestValue(this));
-                            if (Types.asBoolean(isValid)) {
-                                lastElement = element;
-                                return;
-                            }
-                        }
+                        Object isValid = interop.execute(callback, item.getValue(), item.getIndex(), arguments[0], HeapLanguage.asGuestValue(this));
+                        return Types.asBoolean(isValid) ? item.getValue() : null;
                     } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                         throw new IllegalStateException("Cannot execute filter callback.", e);
                     }
-                }
-
-                @Override
-                public boolean hasNext() {
-                    advance();
-                    return lastElement != null;
-                }
-
-                @Override
-                public Object next() {
-                    if (!hasNext()) throw new NoSuchElementException("Iterator has no remaining items.");
-                    Object item = lastElement.getValue();
-                    lastElement = null;
-                    return item;
                 }
 
             };

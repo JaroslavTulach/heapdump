@@ -1,20 +1,11 @@
 package com.oracle.truffle.heap;
 
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.heap.util.HeapLanguageUtils;
-import com.oracle.truffle.heap.util.InstanceWrapper;
-import org.graalvm.collections.Pair;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
 
 /**
  * Implementations of built in global functions from OQL for individual objects.
@@ -34,7 +25,7 @@ interface OQLGlobalSymbols {
         }
 
         @ExportMessage
-        static Object execute(@SuppressWarnings("unused") AllocTrace receiver, Object[] arguments) {
+        static Object execute(@SuppressWarnings("unused") AllocTrace receiver, @SuppressWarnings("unused") Object[] arguments) {
             // TODO: In the original JS implementation, this uses an undefined method, fails, and then defaults to null...
             return HeapLanguage.NULL;
         }
@@ -59,8 +50,8 @@ interface OQLGlobalSymbols {
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") ClassOf receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
             Args.checkArity(arguments, 1);
-            InstanceWrapper<?> instance = HeapLanguageUtils.unwrapArgument(arguments, 0, InstanceWrapper.class);
-            return new JavaClassObject(instance.getInstance().getJavaClass());
+            ObjectInstance argument = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
+            return ObjectJavaClass.create(argument.getInstance().getJavaClass());
         }
 
     }
@@ -80,8 +71,8 @@ interface OQLGlobalSymbols {
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") SizeOf receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
             Args.checkArity(arguments, 1);
-            InstanceWrapper<?> instance = HeapLanguageUtils.unwrapArgument(arguments, 0, InstanceWrapper.class);
-            return instance.getInstance().getSize();
+            ObjectInstance argument = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
+            return argument.getInstance().getSize();
         }
 
     }
@@ -111,12 +102,12 @@ interface OQLGlobalSymbols {
         }
 
         private static String toHtml(Object arg, InteropLibrary call) throws UnsupportedMessageException {
-            if (arg instanceof JavaClassObject) {
-                JavaClass clazz = ((JavaClassObject) arg).getJavaClass();
+            if (arg instanceof ObjectJavaClass) {
+                JavaClass clazz = ((ObjectJavaClass) arg).getJavaClass();
                 long id = clazz.getJavaClassId();
                 return "<a href='file://class/" + id + "' name='" + id + "'>class " + clazz.getName() + "</a>";
-            } else if (arg instanceof InstanceWrapper<?>) {
-                Instance instance = ((InstanceWrapper<?>) arg).getInstance();
+            } else if (arg instanceof ObjectInstance) {
+                Instance instance = ((ObjectInstance) arg).getInstance();
                 long id = instance.getInstanceId();
                 return "<a href='file://instance/" + id + "' name='" + id + "'>" + instance.getJavaClass().getName() + "#" + instance.getInstanceNumber() + "</a>";
             } else if (arg instanceof TruffleObject) {
