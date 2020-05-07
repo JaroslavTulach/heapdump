@@ -143,7 +143,7 @@ public class OQLEngineTest {
         System.out.println("heap.roots");
         final int[] counter = new int[1];
 
-        String query = "select heap.roots";
+        String query = "select heap.roots()";
 
         instance.executeQuery(query, new ObjectVisitor() {
 
@@ -160,7 +160,7 @@ public class OQLEngineTest {
         System.out.println("heap.classes");
         final int[] counter = new int[1];
 
-        String query = "select heap.classes";
+        String query = "select heap.classes()";
 
         instance.executeQuery(query, new ObjectVisitor() {
 
@@ -177,7 +177,7 @@ public class OQLEngineTest {
         System.out.println("heap.finalizables");
         final int[] counter = new int[1];
 
-        String query = "select heap.finalizables";
+        String query = "select heap.finalizables()";
 
         instance.executeQuery(query, new ObjectVisitor() {
 
