@@ -4,10 +4,7 @@ import org.netbeans.lib.profiler.heap.*;
 import org.netbeans.modules.profiler.oql.engine.api.impl.TreeIterator;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import static org.netbeans.lib.profiler.utils.VMUtils.*;
 
@@ -39,6 +36,7 @@ public abstract class HeapUtils {
     }
 
     public static Iterator<Instance> getFinalizerObjects(Heap heap) {
+        // TODO: This needs to be tested...
         JavaClass clazz = findClass(heap, "java.lang.ref.Finalizer");
         Instance queue = (Instance) clazz.getValueOfStaticField("queue");
         Instance head = (Instance) queue.getValueOfField("head");
@@ -136,6 +134,31 @@ public abstract class HeapUtils {
         }
 
         return sb.toString();
+    }
+
+    // Returns a list of objects which are either JavaClass or Instance objects.
+    public static Iterator<Object> getRoots(Heap heap) {
+        // TODO: This is completely not according to specs
+        return getRootsList(heap).iterator();
+    }
+
+    public static List<Object> getRootsList(Heap heap) {
+        List<Object> roots = new ArrayList<>();
+        //noinspection unchecked
+        for(GCRoot root : (Collection<GCRoot>) heap.getGCRoots()) {
+            Instance inst = root.getInstance();
+            if (inst.getJavaClass().getName().equals("java.lang.Class")) {
+                JavaClass jc = heap.getJavaClassByID(inst.getInstanceId());
+                if (jc != null) {
+                    roots.add(jc);
+                } else {
+                    roots.add(inst);
+                }
+            } else {
+                roots.add(inst);
+            }
+        }
+        return roots;
     }
 
 }

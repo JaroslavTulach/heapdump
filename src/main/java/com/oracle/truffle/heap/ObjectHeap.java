@@ -188,8 +188,28 @@ final class ObjectHeap implements TruffleObject {
 
     }
 
-    private Object invoke_roots(Object[] arguments) {
-        throw new IllegalStateException("Unimplemented.");   // TODO
+    private Object invoke_roots(Object[] arguments) throws ArityException {
+        Args.checkArity(arguments, 0);
+        Iterator<Object> it = HeapUtils.getRoots(this.heap);
+        return Iterators.exportIterator(new Iterator<Object>() {
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override
+            public Object next() {
+                Object next = it.next();
+                if (next instanceof Instance) {
+                    return ObjectInstance.create((Instance) next);
+                } else if (next instanceof JavaClass) {
+                    return ObjectJavaClass.create((JavaClass) next);
+                } else {
+                    throw new IllegalStateException("unreachable");
+                }
+            }
+
+        });
     }
 
     @ExportMessage
