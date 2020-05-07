@@ -40,21 +40,20 @@ public abstract class HeapUtils {
 
     public static Iterator<Instance> getFinalizerObjects(Heap heap) {
         JavaClass clazz = findClass(heap, "java.lang.ref.Finalizer");
-        Instance queue = ((ObjectFieldValue) clazz.getValueOfStaticField("queue")).getInstance(); // NOI18N
-        ObjectFieldValue headFld = (ObjectFieldValue) queue.getValueOfField("head"); // NOI18N
+        Instance queue = (Instance) clazz.getValueOfStaticField("queue");
+        Instance head = (Instance) queue.getValueOfField("head");
 
         List<Instance> finalizables = new ArrayList<>();
-        if (headFld != null) {
-            Instance head = headFld.getInstance();
+        if (head != null) {
             while (true) {
-                ObjectFieldValue referentFld = (ObjectFieldValue) head.getValueOfField("referent"); // NOI18N
-                ObjectFieldValue nextFld = (ObjectFieldValue) head.getValueOfField("next"); // NOI18N
+                Instance referentFld = (Instance) head.getValueOfField("referent");
+                Instance nextFld = (Instance) head.getValueOfField("next");
 
-                if (nextFld == null || nextFld.getInstance().equals(head)) {
+                if (nextFld == null || nextFld.equals(head)) {
                     break;
                 }
-                head = nextFld.getInstance();
-                finalizables.add(referentFld.getInstance());
+                head = nextFld;
+                finalizables.add(referentFld);
             }
         }
         return finalizables.iterator();
