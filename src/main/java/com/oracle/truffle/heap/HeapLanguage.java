@@ -306,6 +306,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         // OQL requested symbols:
         public static final String ALLOC_TRACE = "allocTrace";
         public static final String CLASS_OF = "classof";
+        public static final String REFERRERS = "referrers";
         public static final String TO_HTML = "toHtml";
         public static final String SIZE_OF = "sizeof";
 
@@ -327,7 +328,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final String BIND_GLOBAL_SYMBOLS = "bindGlobalSymbols";
 
         private static final MemberDescriptor MEMBERS = MemberDescriptor.properties(
-                ALLOC_TRACE, CLASS_OF, TO_HTML, SIZE_OF,
+                ALLOC_TRACE, CLASS_OF, REFERRERS, TO_HTML, SIZE_OF,
                 CONCAT, CONTAINS, COUNT, FILTER, LENGTH, MAP, MAX, MIN, SORT, SUM, TO_ARRAY, UNIQUE,
                 SET_SCRIPT_LANGUAGE, BIND_GLOBAL_SYMBOLS
         );
@@ -337,6 +338,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         static {
             INSTANCES.put(ALLOC_TRACE, OQLGlobalSymbols.AllocTrace.INSTANCE);
             INSTANCES.put(CLASS_OF, OQLGlobalSymbols.ClassOf.INSTANCE);
+            INSTANCES.put(REFERRERS, OQLGlobalSymbols.Referrers.INSTANCE);
             INSTANCES.put(SIZE_OF, OQLGlobalSymbols.SizeOf.INSTANCE);
             INSTANCES.put(TO_HTML, OQLGlobalSymbols.ToHtml.INSTANCE);
 

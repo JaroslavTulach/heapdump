@@ -7,6 +7,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
 
+import java.util.Iterator;
+
 /**
  * Implementations of built in global functions from OQL for individual objects.
  */
@@ -52,6 +54,31 @@ interface OQLGlobalSymbols {
             Args.checkArity(arguments, 1);
             ObjectInstance argument = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
             return ObjectJavaClass.create(argument.getInstance().getJavaClass());
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    class Referrers implements TruffleObject {
+
+        public static final Referrers INSTANCE = new Referrers();
+
+        private Referrers() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Referrers receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") Referrers receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArityBetween(arguments, 1, 2);
+            // TODO: first argument might be a JavaClass, not an instance...
+            boolean includeWeak = false;
+            if (arguments.length == 2) includeWeak = Args.unwrapBoolean(arguments, 1);
+            ObjectInstance instance = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
+            Iterator<Instance> referrers = HeapUtils.getReferrers(instance.getInstance(), includeWeak);
+            return Iterators.exportIterator(new IteratorObjectInstance(referrers));
         }
 
     }

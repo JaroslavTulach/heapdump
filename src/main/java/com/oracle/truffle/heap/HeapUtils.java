@@ -161,4 +161,54 @@ public abstract class HeapUtils {
         return roots;
     }
 
+    public static Iterator<Instance> getReferrers(Object obj, boolean includeWeak) {
+        List<Instance> instances  = new ArrayList<>();
+        List<Object> references = new ArrayList<>();
+
+        if (obj instanceof Instance) {
+            references.addAll(((Instance)obj).getReferences());
+        } else if (obj instanceof JavaClass) {
+            references.addAll(((JavaClass)obj).getInstances());
+            references.add(((JavaClass)obj).getClassLoader());
+        }
+        if (!references.isEmpty()) {
+            for (Object o : references) {
+                if (o instanceof Value) {
+                    Value val = (Value) o;
+                    Instance inst = val.getDefiningInstance();
+                    if (includeWeak || !isWeakRef(inst.getJavaClass())) {
+                        instances.add(inst);
+                    }
+                } else if (o instanceof Instance) {
+                    if (includeWeak || !isWeakRef(((Instance)o).getJavaClass())) {
+                        instances.add((Instance) o);
+                    }
+                }
+            }
+        }
+        return instances.iterator();
+    }
+
+    private static boolean isWeakRef(JavaClass clazz) {
+        if (clazz == null) return false;
+        boolean isWeak = clazz.getName().equals("java.lang.ref.Reference");
+        isWeak = isWeak || clazz.getName().equals("sun.misc.Ref");  // some very old JVMs
+        if (isWeak) {
+            return true;
+        } else {
+            return isWeakRef(clazz.getSuperClass());
+        }
+    }
+
+    private static boolean isAssignable(JavaClass from, JavaClass to) {
+        if (from == to) {
+            return true;
+        } else if (from == null) {
+            return false;
+        } else {
+            return isAssignable(from.getSuperClass(), to);
+            // Trivial tail recursion:  I have faith in javac.
+        }
+    }
+
 }
