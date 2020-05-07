@@ -172,7 +172,7 @@ public class OQLEngineTest {
         assertTrue(counter[0] > 0);
     }
 
-    @Test
+    @Test @Ignore   // TODO: heap file has no finalizables - we need to test some other file
     public void testHeapFinalizables() throws Exception {
         System.out.println("heap.finalizables");
         final int[] counter = new int[1];
