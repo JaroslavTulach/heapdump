@@ -45,12 +45,7 @@ public class VisitorObject implements TruffleObject {
             boolean finished = false;
             if (receiver.visitor != null) {
                 Object value = arguments[0];
-                // This is a heap language object, just unwrap it, keep primitive values and try to convert everything else to map...
-                if (Types.isNull(value)) value = null;
-                else if (value instanceof ObjectInstance) value = ((ObjectInstance) value).getInstance();
-                else if (value instanceof ObjectJavaClass) value = ((ObjectJavaClass) value).getJavaClass();
-                else if (value instanceof ObjectHeap) value = ((ObjectHeap) value).getHeap();
-                else if (!Types.isPrimitiveValue(value)) value = Value.asValue(value).as(Map.class);
+                value = transformValue(value);
                 finished = receiver.visitor.visit(value);
             }
             return finished;
@@ -59,5 +54,24 @@ public class VisitorObject implements TruffleObject {
         }
     }
 
+    private static Object transformValue(Object value) {
+        // TODO: Cover other objects as well...
+        // This is a heap language object, just unwrap it, keep primitive values and try to convert everything else to map...
+        if (Types.isNull(value)) return null;
+        else if (value instanceof ObjectInstance) return ((ObjectInstance) value).getInstance();
+        else if (value instanceof ObjectJavaClass) return ((ObjectJavaClass) value).getJavaClass();
+        else if (value instanceof ObjectHeap) return ((ObjectHeap) value).getHeap();
+        else if (value instanceof ReadOnlyArray) {  // TODO: do this for any array essentially...
+            Object[] values = ((ReadOnlyArray) value).getValues();
+            Object[] transformed = new Object[values.length];
+            for (int i=0; i<values.length; i++) {
+                transformed[i] = transformValue(values[i]);
+            }
+            return transformed;
+        } else if (!Types.isPrimitiveValue(value)) {
+            return Value.asValue(value).as(Map.class);
+        }
+        return value;
+    }
 
 }

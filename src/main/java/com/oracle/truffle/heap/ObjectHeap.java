@@ -7,8 +7,10 @@ import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
+import org.netbeans.modules.profiler.oql.engine.api.ReferenceChain;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * A native object provided by {@link HeapLanguage} to communicate with a memory-mapped {@link Heap}.
@@ -183,9 +185,46 @@ final class ObjectHeap implements TruffleObject {
         return Iterators.exportIterator(new IteratorObjectInstance(instances));
     }
 
-    private Object invoke_livepaths(Object[] arguments) {
-        throw new IllegalStateException("Unimplemented.");   // TODO
+    private Object invoke_livepaths(Object[] arguments) throws ArityException, UnsupportedTypeException {
+        Args.checkArityBetween(arguments, 1, 2);
+        boolean includeWeak = false;
+        if (arguments.length == 2) {
+            includeWeak = Args.unwrapBoolean(arguments, 1);
+        }
+        ObjectInstance object = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
 
+        // Reference chain is a linked list of items which are either JavaClass or Instance objects.
+        ReferenceChain[] chain = HeapUtils.rootsetReferencesTo(heap, object.instance, includeWeak);
+        TruffleObject[] transformed = new TruffleObject[chain.length];
+        for (int i=0; i < chain.length; i++) {
+            ReferenceChain item = chain[i];
+            transformed[i] = Iterators.exportIterator(new Iterator<Object>() {
+
+                private ReferenceChain next = item;
+
+                @Override
+                public boolean hasNext() {
+                    return next != null;
+                }
+
+                @Override
+                public Object next() {
+                    ReferenceChain chain = next;
+                    if (chain == null) throw new NoSuchElementException();
+                    next = chain.getNext();
+                    Object element = chain.getObj();
+                    if (element instanceof Instance) {
+                        return ObjectInstance.create((Instance) element);
+                    } else if (element instanceof JavaClass) {
+                        return ObjectJavaClass.create((JavaClass) element);
+                    } else {
+                        throw new IllegalStateException("unreachable");
+                    }
+                }
+            });
+        }
+
+        return Interop.wrapArray(transformed);
     }
 
     private Object invoke_roots(Object[] arguments) throws ArityException {

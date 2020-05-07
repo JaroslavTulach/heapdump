@@ -1,10 +1,12 @@
 package com.oracle.truffle.heap;
 
 import org.netbeans.lib.profiler.heap.*;
+import org.netbeans.modules.profiler.oql.engine.api.ReferenceChain;
 import org.netbeans.modules.profiler.oql.engine.api.impl.TreeIterator;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.netbeans.lib.profiler.utils.VMUtils.*;
 
@@ -236,15 +238,59 @@ public abstract class HeapUtils {
         }
     }
 
-    private static boolean isAssignable(JavaClass from, JavaClass to) {
-        if (from == to) {
-            return true;
-        } else if (from == null) {
-            return false;
-        } else {
-            return isAssignable(from.getSuperClass(), to);
-            // Trivial tail recursion:  I have faith in javac.
+    public static ReferenceChain[] rootsetReferencesTo(Heap heap, Instance target, boolean includeWeak) {
+        // TODO: make this cancellable?
+        class State {
+            private Iterator<Instance> iterator;
+            private ReferenceChain path;
+            private AtomicLong hits = new AtomicLong(0);
+
+            public State(ReferenceChain path, Iterator<Instance> iterator) {
+                this.iterator = iterator;
+                this.path = path;
+            }
         }
+        Deque<State> stack = new ArrayDeque<>();
+        Set<Object> ignored = new HashSet<>();
+
+        List<ReferenceChain> result = new ArrayList<>();
+
+        Iterator toInspect = getRoots(heap);
+        ReferenceChain path = null;
+        State s = new State(path, toInspect);
+
+        do {
+            if (path != null && path.getObj().equals(target)) {
+                result.add(path);
+                s.hits.incrementAndGet();
+            } else {
+                while(toInspect.hasNext()) {
+                    Object node = toInspect.next();
+                    if (path != null && path.contains(node)) continue;
+                    if (ignored.contains(node)) continue;
+
+                    stack.push(s);
+                    path = new ReferenceChain(heap, node, path);
+                    toInspect = HeapUtils.getReferees(node, includeWeak);
+                    s = new State(path, toInspect);
+                }
+                if (path != null && path.getObj().equals(target)) {
+                    result.add(path);
+                    s.hits.incrementAndGet();
+                }
+            }
+            State s1 = stack.poll();
+            if (s1 == null) break;
+            s1.hits.addAndGet(s.hits.get());
+            if (s.hits.get() == 0L) {
+                ignored.add(path.getObj());
+            }
+            s = s1;
+            path = s.path;
+            toInspect = s.iterator;
+        } while (true);
+
+        return result.toArray(new ReferenceChain[0]);
     }
 
 }
