@@ -189,7 +189,7 @@ public class OQLEngineTest {
         assertTrue(counter[0] > 0);
     }
 
-    @Test @Ignore
+    @Test
     public void testHeapLivePaths() throws Exception {
         System.out.println("heap.livepaths");
         final int[] counter = new int[1];
@@ -273,7 +273,7 @@ public class OQLEngineTest {
         assertTrue(counter[0] > 0);
     }
 
-    @Test @Ignore
+    @Test
     public void testforEachReferrer() throws Exception {
         System.out.println("forEachReferrer");
 
@@ -282,7 +282,7 @@ public class OQLEngineTest {
         instance.executeQuery(query, null);
     }
 
-    @Test @Ignore
+    @Test
     public void testforEachReferee() throws Exception {
         System.out.println("forEachReferee");
 
@@ -291,7 +291,7 @@ public class OQLEngineTest {
         instance.executeQuery(query, null);
     }
 
-    @Test @Ignore
+    @Test
     public void testReferrersInstance() throws Exception {
         System.out.println("referrers-instance");
 
@@ -313,7 +313,7 @@ public class OQLEngineTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void testRefereesInstance() throws Exception {
         System.out.println("referees-instance");
 
@@ -335,7 +335,7 @@ public class OQLEngineTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void testRefereesClass() throws Exception {
         System.out.println("referees-class");
 
@@ -357,7 +357,7 @@ public class OQLEngineTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void testRefers() throws Exception  {
         System.out.println("refers");
 
@@ -385,7 +385,7 @@ public class OQLEngineTest {
         assertFalse(result[0]);
     }
 
-    @Test @Ignore
+    @Test
     public void testReachables() throws Exception {
         System.out.println("reachables");
         final int count[] = new int[1];
@@ -436,7 +436,7 @@ public class OQLEngineTest {
         assertTrue(counter[0] > 0);
     }
 
-    @Test @Ignore
+    @Test
     public void testRoot() throws Exception {
         System.out.println("root");
 
@@ -655,7 +655,7 @@ public class OQLEngineTest {
         assertEquals("Empty value: " + rslt[0], "", rslt[0].get("value"));
     }
 
-    @Test @Ignore
+    @Test
     public void testMapWrapping() throws Exception {
         System.out.println("map wrapping");
 
@@ -672,7 +672,7 @@ public class OQLEngineTest {
         assertEquals(result[1], result[0]);
     }
 
-    @Test @Ignore
+    @Test
     public void testUnwrapIterator() throws Exception {
         System.out.println("unwrap iterator");
 
@@ -685,7 +685,7 @@ public class OQLEngineTest {
         });
     }
 
-    @Test @Ignore
+    @Test
     public void testUnwrapIteratorComplex() throws Exception {
         System.out.println("unwrap iterator complex");
 
@@ -698,7 +698,7 @@ public class OQLEngineTest {
         });
     }
 
-    @Test @Ignore
+    @Test
     public void testTop() throws Exception {
         System.out.println("top 5");
 
