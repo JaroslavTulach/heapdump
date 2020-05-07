@@ -211,38 +211,6 @@ final class ObjectHeap implements TruffleObject {
     }
 
     @ExportMessage
-    static boolean isMemberReadable(@SuppressWarnings("unused") ObjectHeap receiver, String member) {
-        // Invokable members with no arguments can be also seen as properties...
-        // (if you are a very creative person...)
-        switch (member) {
-            case FINALIZABLES:
-            case OBJECTS:
-            case CLASSES:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    @ExportMessage
-    static Object readMember(ObjectHeap receiver, String member) throws UnknownIdentifierException {
-        try {
-            switch (member) {
-                case FINALIZABLES:
-                    return receiver.invoke_finalizables(new Object[0]);
-                case CLASSES:
-                    return receiver.invoke_classes(new Object[0]);
-                case OBJECTS:
-                    return receiver.invoke_objects(new Object[0]);
-                default:
-                    throw UnknownIdentifierException.create(member);
-            }
-        } catch (ArityException | UnsupportedTypeException e) {
-            throw new RuntimeException(e);  // should be unreachable
-        }
-    }
-
-    @ExportMessage
     static Object invokeMember(
             ObjectHeap receiver, String member, Object[] arguments
     ) throws ArityException,
