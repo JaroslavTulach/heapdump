@@ -189,6 +189,42 @@ public abstract class HeapUtils {
         return instances.iterator();
     }
 
+    public static Iterator<Instance> getReferees(Object obj, boolean includeWeak) {
+        List<Instance> instances = new ArrayList<>();
+        List<Object> values    = new ArrayList<>();
+
+        if (obj instanceof Instance) {
+            Instance o = (Instance)obj;
+            values.addAll(o.getFieldValues());
+        }
+        if (obj instanceof JavaClass) {
+            values.addAll(((JavaClass)obj).getStaticFieldValues());
+        }
+        if (obj instanceof ObjectArrayInstance) {
+            ObjectArrayInstance oarr = (ObjectArrayInstance)obj;
+            values.addAll(oarr.getValues());
+        }
+        if (!values.isEmpty()) {
+            for (Object value : values) {
+                if (value instanceof ObjectFieldValue && ((ObjectFieldValue) value).getInstance() != null) {
+                    Instance inst = ((ObjectFieldValue) value).getInstance();
+                    if (includeWeak || !isWeakRef(inst.getJavaClass())) {
+                        if (inst.getJavaClass().getName().equals("java.lang.Class")) {
+                            instances.add(inst);
+                        } else {
+                            instances.add(inst);
+                        }
+                    }
+                } else if (value instanceof Instance) {
+                    if (includeWeak || !isWeakRef(((Instance) value).getJavaClass())) {
+                        instances.add((Instance) value);
+                    }
+                }
+            }
+        }
+        return instances.iterator();
+    }
+
     private static boolean isWeakRef(JavaClass clazz) {
         if (clazz == null) return false;
         boolean isWeak = clazz.getName().equals("java.lang.ref.Reference");

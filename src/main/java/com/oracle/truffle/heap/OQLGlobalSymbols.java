@@ -84,6 +84,30 @@ interface OQLGlobalSymbols {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    class Referees implements TruffleObject {
+
+        public static final Referees INSTANCE = new Referees();
+
+        private Referees() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Referees receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") Referees receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArityBetween(arguments, 1, 2);
+            // TODO: first argument might be a JavaClass, not an instance...
+            boolean includeWeak = false;
+            if (arguments.length == 2) includeWeak = Args.unwrapBoolean(arguments, 1);
+            ObjectInstance instance = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
+            Iterator<Instance> referrers = HeapUtils.getReferees(instance.getInstance(), includeWeak);
+            return Iterators.exportIterator(new IteratorObjectInstance(referrers));
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     class SizeOf implements TruffleObject {
 
         public static final SizeOf INSTANCE = new SizeOf();
