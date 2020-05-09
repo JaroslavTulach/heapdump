@@ -140,7 +140,7 @@ public abstract class HeapUtils {
 
     // Returns a list of objects which are either JavaClass or Instance objects.
     public static Iterator<Object> getRoots(Heap heap) {
-        // TODO: This is completely not according to specs
+        // TODO: This is completely not according to specs - should return GC roots directly
         return getRootsList(heap).iterator();
     }
 

@@ -272,6 +272,32 @@ interface OQLGlobalSymbols {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    class Root implements TruffleObject {
+
+        public static final Root INSTANCE = new Root();
+
+        private Root() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Root receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") Root receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArity(arguments, 1);
+            ObjectInstance instance = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
+            Instance root = instance.getInstance().getNearestGCRootPointer();
+            while (!root.isGCRoot()) {
+                root = root.getNearestGCRootPointer();
+            }
+            // TODO: Return the actual root object, not the instance...
+            return ObjectInstance.create(root);
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     class SizeOf implements TruffleObject {
 
         public static final SizeOf INSTANCE = new SizeOf();

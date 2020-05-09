@@ -313,8 +313,9 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final String REFERRERS = "referrers";
         public static final String REFEREES = "referees";
         public static final String REFERS = "refers";
-        public static final String TO_HTML = "toHtml";
+        public static final String ROOT = "root";
         public static final String SIZE_OF = "sizeof";
+        public static final String TO_HTML = "toHtml";
 
         public static final String CONCAT = "concat";
         public static final String CONTAINS = "contains";
@@ -334,7 +335,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final String BIND_GLOBAL_SYMBOLS = "bindGlobalSymbols";
 
         private static final MemberDescriptor MEMBERS = MemberDescriptor.properties(
-                ALLOC_TRACE, CLASS_OF, IDENTICAL, OBJECT_ID, REACHABLES, REFERRERS, REFEREES, REFERS, TO_HTML, SIZE_OF,
+                ALLOC_TRACE, CLASS_OF, IDENTICAL, OBJECT_ID, REACHABLES, REFERRERS, REFEREES, REFERS, ROOT, SIZE_OF, TO_HTML,
                 CONCAT, CONTAINS, COUNT, FILTER, LENGTH, MAP, MAX, MIN, SORT, SUM, TO_ARRAY, UNIQUE,
                 SET_SCRIPT_LANGUAGE, BIND_GLOBAL_SYMBOLS
         );
@@ -350,6 +351,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
             INSTANCES.put(REFERRERS, OQLGlobalSymbols.Referrers.INSTANCE);
             INSTANCES.put(REFEREES, OQLGlobalSymbols.Referees.INSTANCE);
             INSTANCES.put(REFERS, OQLGlobalSymbols.Refers.INSTANCE);
+            INSTANCES.put(ROOT, OQLGlobalSymbols.Root.INSTANCE);
             INSTANCES.put(SIZE_OF, OQLGlobalSymbols.SizeOf.INSTANCE);
             INSTANCES.put(TO_HTML, OQLGlobalSymbols.ToHtml.INSTANCE);
 
