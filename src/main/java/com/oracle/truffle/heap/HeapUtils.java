@@ -202,7 +202,7 @@ public abstract class HeapUtils {
         if (obj instanceof JavaClass) {
             values.addAll(((JavaClass)obj).getStaticFieldValues());
         }
-        if (obj instanceof ObjectArrayInstance) {
+        if (obj instanceof ObjectArrayInstance) {   // TODO: This is unreachable, right?!
             ObjectArrayInstance oarr = (ObjectArrayInstance)obj;
             values.addAll(oarr.getValues());
         }

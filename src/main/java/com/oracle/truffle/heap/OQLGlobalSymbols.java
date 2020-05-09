@@ -136,12 +136,18 @@ interface OQLGlobalSymbols {
         @ExportMessage
         static Object execute(@SuppressWarnings("unused") Referees receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
             Args.checkArityBetween(arguments, 1, 2);
-            // TODO: first argument might be a JavaClass, not an instance...
             boolean includeWeak = false;
             if (arguments.length == 2) includeWeak = Args.unwrapBoolean(arguments, 1);
-            ObjectInstance instance = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
-            Iterator<Instance> referrers = HeapUtils.getReferees(instance.getInstance(), includeWeak);
-            return Iterators.exportIterator(new IteratorObjectInstance(referrers));
+            Object arg = arguments[0];
+            if (arg instanceof ObjectJavaClass) {
+                Iterator<Instance> referrers = HeapUtils.getReferees(((ObjectJavaClass) arg).getJavaClass(), includeWeak);
+                return Iterators.exportIterator(new IteratorObjectInstance(referrers));
+            } else if (arg instanceof ObjectInstance) {
+                Iterator<Instance> referrers = HeapUtils.getReferees(((ObjectInstance) arg).getInstance(), includeWeak);
+                return Iterators.exportIterator(new IteratorObjectInstance(referrers));
+            } else {
+                throw UnsupportedTypeException.create(arguments, "Expected class or object instance as first argument, but got "+arg);
+            }
         }
     }
 
