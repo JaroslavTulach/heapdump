@@ -167,6 +167,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
      * <p>Resolve a {@link JavaClass} argument. This can be either a direct object, or a string reference into
      * the list of classes on the heap.</p>
      */
+    // TODO: We should probably do something similar and accept object ids instead of instance objects wherever possible...
     static JavaClass unwrapJavaClassArgument(Object[] arguments, int argIndex, Heap heap) throws UnsupportedTypeException {
         Object argument = arguments[argIndex];
         if (argument instanceof ObjectJavaClass) {
@@ -306,6 +307,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         // OQL requested symbols:
         public static final String ALLOC_TRACE = "allocTrace";
         public static final String CLASS_OF = "classof";
+        public static final String REACHABLES = "reachables";
         public static final String REFERRERS = "referrers";
         public static final String REFEREES = "referees";
         public static final String TO_HTML = "toHtml";
@@ -329,7 +331,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final String BIND_GLOBAL_SYMBOLS = "bindGlobalSymbols";
 
         private static final MemberDescriptor MEMBERS = MemberDescriptor.properties(
-                ALLOC_TRACE, CLASS_OF, REFERRERS, REFEREES, TO_HTML, SIZE_OF,
+                ALLOC_TRACE, CLASS_OF, REACHABLES, REFERRERS, REFEREES, TO_HTML, SIZE_OF,
                 CONCAT, CONTAINS, COUNT, FILTER, LENGTH, MAP, MAX, MIN, SORT, SUM, TO_ARRAY, UNIQUE,
                 SET_SCRIPT_LANGUAGE, BIND_GLOBAL_SYMBOLS
         );
@@ -339,6 +341,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         static {
             INSTANCES.put(ALLOC_TRACE, OQLGlobalSymbols.AllocTrace.INSTANCE);
             INSTANCES.put(CLASS_OF, OQLGlobalSymbols.ClassOf.INSTANCE);
+            INSTANCES.put(REACHABLES, OQLGlobalSymbols.Reachables.INSTANCE);
             INSTANCES.put(REFERRERS, OQLGlobalSymbols.Referrers.INSTANCE);
             INSTANCES.put(REFEREES, OQLGlobalSymbols.Referees.INSTANCE);
             INSTANCES.put(SIZE_OF, OQLGlobalSymbols.SizeOf.INSTANCE);

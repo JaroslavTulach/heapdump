@@ -45,8 +45,7 @@ public class VisitorObject implements TruffleObject {
             boolean finished = false;
             if (receiver.visitor != null) {
                 Object value = arguments[0];
-                value = transformValue(value);
-                finished = receiver.visitor.visit(value);
+                return receiver.dispatchValue(value);
             }
             return finished;
         } else {
@@ -54,21 +53,52 @@ public class VisitorObject implements TruffleObject {
         }
     }
 
+    private boolean dispatchValue(Object value) {
+        // TODO: WTF this control flow?
+        if (visitor == null) return false;
+        if (value == null) return false;
+        InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+        // If this object is "iterable", deliver each item separately...
+        Boolean heapDispatch = dispatchHeap(value); // first, unwrap all ArrayInstances, etc. because we don't want to iterate those...
+        if (heapDispatch != null) {
+            return heapDispatch;
+        }
+        if (value instanceof TruffleObject && interop.hasArrayElements(value)) {
+            try {
+                int i = 0;
+                while (i < interop.getArraySize(value)) {
+                    if (interop.isArrayElementReadable(value, i)) {
+                        Object item = interop.readArrayElement(value, i);
+                        if (dispatchValue(item)) return true;
+                    }
+                    i += 1;
+                }
+                return false;
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw new IllegalStateException("Value is array, but cannot access elemnts.", e);
+            }
+        } else {
+            value = transformValue(value);
+            return visitor.visit(value);
+        }
+    }
+
+    private Boolean dispatchHeap(Object value) {
+        if (visitor == null) return null;
+        if (value instanceof ObjectInstance) return visitor.visit(((ObjectInstance) value).getInstance());
+        else if (value instanceof ObjectJavaClass) return visitor.visit(((ObjectJavaClass) value).getJavaClass());
+        else if (value instanceof ObjectHeap) return visitor.visit(((ObjectHeap) value).getHeap());
+        return null;
+    }
+
     private static Object transformValue(Object value) {
         // TODO: Cover other objects as well...
         // This is a heap language object, just unwrap it, keep primitive values and try to convert everything else to map...
         if (Types.isNull(value)) return null;
-        else if (value instanceof ObjectInstance) return ((ObjectInstance) value).getInstance();
-        else if (value instanceof ObjectJavaClass) return ((ObjectJavaClass) value).getJavaClass();
-        else if (value instanceof ObjectHeap) return ((ObjectHeap) value).getHeap();
-        else if (value instanceof ReadOnlyArray) {  // TODO: do this for any array essentially...
-            Object[] values = ((ReadOnlyArray) value).getValues();
-            Object[] transformed = new Object[values.length];
-            for (int i=0; i<values.length; i++) {
-                transformed[i] = transformValue(values[i]);
-            }
-            return transformed;
-        } else if (!Types.isPrimitiveValue(value)) {
+        //else if (value instanceof ObjectInstance) return ((ObjectInstance) value).getInstance();
+        //else if (value instanceof ObjectJavaClass) return ((ObjectJavaClass) value).getJavaClass();
+        //else if (value instanceof ObjectHeap) return ((ObjectHeap) value).getHeap();
+        else if (!Types.isPrimitiveValue(value)) {
             return Value.asValue(value).as(Map.class);
         }
         return value;

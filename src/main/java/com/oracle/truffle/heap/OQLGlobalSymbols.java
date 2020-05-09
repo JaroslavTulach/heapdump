@@ -6,8 +6,12 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
+import org.netbeans.modules.profiler.oql.engine.api.impl.ReachableExcludes;
+import org.netbeans.modules.profiler.oql.engine.api.impl.ReachableObjects;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.StringTokenizer;
 
 /**
  * Implementations of built in global functions from OQL for individual objects.
@@ -54,6 +58,40 @@ interface OQLGlobalSymbols {
             Args.checkArity(arguments, 1);
             ObjectInstance argument = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
             return ObjectJavaClass.create(argument.getInstance().getJavaClass());
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    class Reachables implements TruffleObject {
+
+        public static final Reachables INSTANCE = new Reachables();
+
+        private Reachables() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Reachables receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") Reachables receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArityBetween(arguments, 1, 2);
+            Instance arg = Args.unwrapInstance(arguments, 0, ObjectInstance.class).getInstance();
+            ReachableObjects ro;
+            if (arguments.length == 1) {
+                ro = new ReachableObjects(arg, null);
+            } else {
+                String fields = Args.unwrapString(arguments, 1);
+                StringTokenizer tokens = new StringTokenizer(fields, ",");
+                ArrayList<String> excluded = new ArrayList<>();
+                while (tokens.hasMoreTokens()) {
+                    excluded.add(tokens.nextToken().trim());
+                }
+                ro = new ReachableObjects(arg, excluded::contains);
+            }
+
+            return Iterators.exportIterator(new IteratorObjectInstance(ro.getReachables()));
         }
 
     }
