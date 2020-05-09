@@ -65,6 +65,66 @@ interface OQLGlobalSymbols {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    class ForEachReferrer implements TruffleObject {
+
+        public static final ForEachReferrer INSTANCE = new ForEachReferrer();
+
+        private ForEachReferrer() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") ForEachReferrer receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(ForEachReferrer receiver, Object[] arguments) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+            Args.checkArityBetween(arguments, 2, 3);
+            // TODO: argument might be a JavaClass, not an instance...
+            boolean includeWeak = false;
+            if (arguments.length == 3) includeWeak = Args.unwrapBoolean(arguments, 1);
+            ObjectInstance instance = Args.unwrapInstance(arguments, 1, ObjectInstance.class);
+            TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 0, "it");
+            Iterator<Instance> referrers = HeapUtils.getReferrers(instance.getInstance(), includeWeak);
+            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+            while (referrers.hasNext()) {
+                interop.execute(callback, ObjectInstance.create(referrers.next()));
+            }
+            return instance;
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    class ForEachReferee implements TruffleObject {
+
+        public static final ForEachReferee INSTANCE = new ForEachReferee();
+
+        private ForEachReferee() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") ForEachReferee receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") ForEachReferee receiver, Object[] arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            Args.checkArityBetween(arguments, 2, 3);
+            // TODO: argument might be a JavaClass, not an instance...
+            boolean includeWeak = false;
+            if (arguments.length == 3) includeWeak = Args.unwrapBoolean(arguments, 1);
+            ObjectInstance instance = Args.unwrapInstance(arguments, 1, ObjectInstance.class);
+            TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 0, "it");
+            Iterator<Instance> referrers = HeapUtils.getReferees(instance.getInstance(), includeWeak);
+            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+            while (referrers.hasNext()) {
+                interop.execute(callback, ObjectInstance.create(referrers.next()));
+            }
+            return instance;
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     class Identical implements TruffleObject {
 
         public static final Identical INSTANCE = new Identical();
