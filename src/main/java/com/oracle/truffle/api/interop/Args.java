@@ -29,6 +29,13 @@ public final class Args {
         }
     }
 
+    public static long unwrapIntegral(Object[] arguments, int argIndex) throws UnsupportedTypeException {
+        Long value = Types.tryAsIntegralNumber(arguments[argIndex]);
+        if (value != null) return value; else {
+            throw UnsupportedTypeException.create(arguments, "Expected numver as argument "+(argIndex+1)+", but found "+arguments[argIndex]+".");
+        }
+    }
+
     public static String unwrapString(Object[] arguments, int argIndex) throws UnsupportedTypeException {
         String value = Types.tryAsString(arguments[argIndex]);
         if (value != null) return value; else {

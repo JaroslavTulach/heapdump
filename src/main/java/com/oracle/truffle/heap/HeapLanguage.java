@@ -329,6 +329,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         public static final String MIN = "min";
         public static final String SORT = "sort";
         public static final String SUM = "sum";
+        public static final String TOP = "top";
         public static final String TO_ARRAY = "toArray";
         public static final String UNIQUE = "unique";
 
@@ -338,7 +339,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
 
         private static final MemberDescriptor MEMBERS = MemberDescriptor.properties(
                 ALLOC_TRACE, CLASS_OF, FOR_EACH_REFERRER, FOR_EACH_REFEREE, IDENTICAL, OBJECT_ID, REACHABLES, REFERRERS, REFEREES, REFERS, ROOT, SIZE_OF, TO_HTML,
-                CONCAT, CONTAINS, COUNT, FILTER, LENGTH, MAP, MAX, MIN, SORT, SUM, TO_ARRAY, UNIQUE,
+                CONCAT, CONTAINS, COUNT, FILTER, LENGTH, MAP, MAX, MIN, SORT, SUM, TOP, TO_ARRAY, UNIQUE,
                 SET_SCRIPT_LANGUAGE, BIND_GLOBAL_SYMBOLS
         );
 
@@ -369,6 +370,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
             INSTANCES.put(MIN, OQLSequenceGlobals.Min.INSTANCE);
             INSTANCES.put(SORT, OQLSequenceGlobals.Sort.INSTANCE);
             INSTANCES.put(SUM, OQLSequenceGlobals.Sum.INSTANCE);
+            INSTANCES.put(TOP, OQLSequenceGlobals.Top.INSTANCE);
             INSTANCES.put(TO_ARRAY, OQLSequenceGlobals.ToArray.INSTANCE);
             INSTANCES.put(UNIQUE, OQLSequenceGlobals.Unique.INSTANCE);
 

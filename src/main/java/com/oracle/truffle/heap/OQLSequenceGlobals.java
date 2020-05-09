@@ -458,6 +458,54 @@ interface OQLSequenceGlobals {
 
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    class Top implements TruffleObject {
+
+        public static final Top INSTANCE = new Top();
+
+        private Top() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Top receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") Top receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArityBetween(arguments, 1, 3);
+
+            Comparator<Object> cmp;
+            if (arguments.length == 1) {    // use default comparison
+                cmp = (o1, o2) -> 0;        // should preserve initial sorting
+            } else {
+                InteropLibrary interop = InteropLibrary.getFactory().getUncached();
+                TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "lhs", "rhs");
+                cmp = (o1, o2) -> {
+                    try {
+                        return (int) Types.asIntegralNumber(interop.execute(callback, o1, o2));
+                    } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                        throw new IllegalStateException("Cannot execute compare callback.", e);
+                    }
+                };
+            }
+
+            long take = 10;
+            if (arguments.length == 3) {
+                take = Args.unwrapIntegral(arguments, 2);
+            }
+
+            List<?> items = Args.unwrapList(arguments, 0);
+            items.sort(cmp);
+            Object[] result = new Object[(int) take];   // TODO: Safe cast? Also other places...
+            for (int i=0; i<take && i< items.size(); i++) {
+                result[i] = items.get(i);
+            }
+
+            return Interop.wrapArray(result);
+        }
+
+    }
+
     /**
      * This function returns an array/enumeration containing unique elements of the given input array/enumeration.
      */
