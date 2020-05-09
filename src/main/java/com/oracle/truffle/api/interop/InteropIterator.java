@@ -14,7 +14,7 @@ import java.util.Iterator;
  * as defined by Java {@link Iterator}.</p>
  */
 @ExportLibrary(InteropLibrary.class)
-final class InteropIterator<T> implements TruffleObject, Iterator<T> {
+public final class InteropIterator<T> implements TruffleObject, Iterator<T> {
 
     private static final String HAS_NEXT = "hasNext";
     private static final String NEXT = "next";

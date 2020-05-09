@@ -227,16 +227,32 @@ interface OQLSequenceGlobals {
 
             InteropLibrary interop = InteropLibrary.getFactory().getUncached();
             Iterator<Object> mappedIterator = new Iterator<Object>() {
+
+                // TODO: This is very weird behaviour (which is not in the spec :/) - can we make this more idiomatic somehow?
+                InteropIterator<?> inner;
+
                 @Override
                 public boolean hasNext() {
-                    return items.hasNext();
+                    return (inner != null && inner.hasNext()) || items.hasNext();
                 }
 
                 @Override
                 public Object next() {
                     try {
-                        IndexPair<?, ?> item = items.next();
-                        return interop.execute(callback, item.getValue(), item.getIndex(), arguments[0], HeapLanguage.asGuestValue(this));
+                        if (inner != null) {
+                            Object result = null;
+                            Object item = inner.next();
+                            if (!inner.hasNext()) inner = null;
+                            return interop.execute(callback, item, -1, arguments[0], HeapLanguage.asGuestValue(this));
+                        } else {
+                            IndexPair<?, ?> item = items.next();
+                            if (item.getValue() instanceof InteropIterator<?>) {
+                                this.inner = (InteropIterator<?>) item.getValue();
+                                return this.next();
+                            } else {
+                                return interop.execute(callback, item.getValue(), item.getIndex(), arguments[0], HeapLanguage.asGuestValue(this));
+                            }
+                        }
                     } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                         throw new IllegalStateException("Cannot execute map callback.", e);
                     }

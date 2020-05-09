@@ -143,7 +143,7 @@ class ObjectInstance implements TruffleObject {
 
         @ExportMessage
         public boolean isArrayElementReadable(long index) {
-            return 0 <= index && index <= this.instance.getSize();
+            return 0 <= index && index < this.items.size();
         }
 
         @ExportMessage
