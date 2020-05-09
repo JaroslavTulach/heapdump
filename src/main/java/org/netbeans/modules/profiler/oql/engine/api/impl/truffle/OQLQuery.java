@@ -56,7 +56,7 @@ public class OQLQuery {
     public String buildJS() {
         if (className == null || instanceName == null) {
             // The query is only "select `JS_expression`" - in that case, just eval it
-            return "{ let result = "+selectExpression+"; print(result); for (r in result) { if (visitor.visit(result[r])) { break }; }}";
+            return "{ let result = "+selectExpression+"; let isIterable = result != null && typeof result[Symbol.iterator] === 'function'; if (isIterable) { for (r in result) { if (visitor.visit(result[r])) { break }; }} else { visitor.visit(result); } }";
         } else {
             // The query is "select `JS_expression` from `class_name` `identifier`
             // visitor is

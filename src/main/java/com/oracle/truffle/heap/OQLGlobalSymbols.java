@@ -4,6 +4,7 @@ import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import org.netbeans.lib.profiler.heap.FieldValue;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
 import org.netbeans.modules.profiler.oql.engine.api.impl.ReachableExcludes;
@@ -11,6 +12,7 @@ import org.netbeans.modules.profiler.oql.engine.api.impl.ReachableObjects;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.StringTokenizer;
 
 /**
@@ -58,6 +60,73 @@ interface OQLGlobalSymbols {
             Args.checkArity(arguments, 1);
             ObjectInstance argument = Args.unwrapInstance(arguments, 0, ObjectInstance.class);
             return ObjectJavaClass.create(argument.getInstance().getJavaClass());
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    class Identical implements TruffleObject {
+
+        public static final Identical INSTANCE = new Identical();
+
+        private Identical() {}
+
+        @ExportMessage
+        static boolean isExecutable(Identical receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(Identical receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArity(arguments, 2);
+            return identical(arguments[0], arguments[1]);
+        }
+
+        // Version of identity that defaults to object equality when not heap object.
+        static boolean identical(Object lhs, Object rhs) {
+            if (lhs instanceof ObjectInstance || lhs instanceof ObjectJavaClass) {
+                try {
+                    lhs = ObjectId.execute(null, new Object[]{ lhs });
+                } catch (ArityException | UnsupportedTypeException e) {
+                    // do nothing...
+                }
+            }
+            if (rhs instanceof ObjectInstance || rhs instanceof ObjectJavaClass) {
+                try {
+                    rhs = ObjectId.execute(null, new Object[] { rhs });
+                } catch (ArityException | UnsupportedTypeException e) {
+                    // do nothing...
+                }
+            }
+            if (lhs == null || rhs == null) return lhs == rhs;
+            return lhs.equals(rhs);
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    class ObjectId implements TruffleObject {
+
+        public static final ObjectId INSTANCE = new ObjectId();
+
+        private ObjectId() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") ObjectId receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") ObjectId receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArity(arguments, 1);
+            Object arg = arguments[0];
+            if (arg instanceof ObjectInstance) {
+                return ((ObjectInstance) arg).getInstance().getInstanceId();
+            } else if (arg instanceof ObjectJavaClass) {
+                return ((ObjectJavaClass) arg).getJavaClass().getJavaClassId();
+            } else {
+                throw UnsupportedTypeException.create(arguments, "Expected class or instance object as argument, but found "+arg);
+            }
         }
 
     }
@@ -149,6 +218,57 @@ interface OQLGlobalSymbols {
                 throw UnsupportedTypeException.create(arguments, "Expected class or object instance as first argument, but got "+arg);
             }
         }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    class Refers implements TruffleObject {
+
+        public static final Refers INSTANCE = new Refers();
+
+        private Refers() {}
+
+        @ExportMessage
+        static boolean isExecutable(@SuppressWarnings("unused") Refers receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(@SuppressWarnings("unused") Refers receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            Args.checkArity(arguments, 2);
+            Object from = arguments[0];
+            if (from instanceof ObjectInstance.PrimitiveArray) {
+                return false;
+            } else if (from instanceof ObjectInstance.ObjectArray) {
+                for (Instance item : ((ObjectInstance.ObjectArray) from).getItems()) {
+                    if (Identical.identical(item, arguments[1])) {
+                        return true;
+                    }
+                }
+                return false;
+            } else if (from instanceof ObjectInstance) {
+                ObjectInstance instance = (ObjectInstance) from;
+                for (String member : instance.members.getProperties()) {
+                    if (instance.isMemberReadable(member)) {
+                        Object item = instance.readMember(member);
+                        if (Identical.identical(item, arguments[1])) {
+                            return true;
+                        }
+                    }
+                }
+            } else if (from instanceof ObjectJavaClass) {
+                JavaClass clazz = ((ObjectJavaClass) from).getJavaClass();
+                //noinspection unchecked
+                List<FieldValue> staticFieldValues = (List<FieldValue>) clazz.getStaticFieldValues();
+                for (FieldValue field : staticFieldValues) {
+                    Object value = clazz.getValueOfStaticField(field.getField().getName());
+                    if (Identical.identical(value, arguments[1])) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
     }
 
     @ExportLibrary(InteropLibrary.class)

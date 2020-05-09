@@ -5,6 +5,9 @@ import com.oracle.truffle.api.library.ExportMessage;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
 
+import java.util.Collections;
+import java.util.Iterator;
+
 /**
  * <p>A {@link TruffleObject} that stores a list of {@link String} member names. Each member is either a
  * property or a function. Both sets can be queried in a set-like manner (however, the access is currently
@@ -54,6 +57,23 @@ public final class MemberDescriptor implements TruffleObject {
         this.functions = functions;
         this.functionsIndexOffset = properties == null ? 0 : properties.length;
         this.totalLength = (properties == null ? 0 : properties.length) + (functions == null ? 0 : functions.length);
+    }
+
+    public Iterable<String> getProperties() {
+        if (properties == null) return Collections.emptyList();
+        return () -> new Iterator<String>() {
+            int i = 0;
+            @Override
+            public boolean hasNext() {
+                return i < properties.length;
+            }
+
+            @Override
+            public String next() {
+                i += 1;
+                return properties[i-1];
+            }
+        };
     }
 
     /**

@@ -127,6 +127,10 @@ class ObjectInstance implements TruffleObject {
             this.items = (List<Instance>) instance.getValues();
         }
 
+        public List<Instance> getItems() {
+            return items;
+        }
+
         @ExportMessage
         public boolean hasArrayElements() {
             return true;
