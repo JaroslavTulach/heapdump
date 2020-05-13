@@ -4,6 +4,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import org.netbeans.modules.profiler.oql.engine.api.OQLEngine;
 
 import java.util.Map;
 
@@ -12,6 +13,27 @@ import java.util.Map;
  * features.
  */
 interface BuiltIns {
+
+    @ExportLibrary(InteropLibrary.class)
+    final class WrapVisitor implements TruffleObject {
+
+        static final WrapVisitor INSTANCE = new WrapVisitor();
+
+        private WrapVisitor() {}
+
+        @ExportMessage
+        static boolean isExecutable(WrapVisitor receiver) {
+            return true;
+        }
+
+        @ExportMessage
+        static Object execute(WrapVisitor receiver, Object[] arguments) throws ArityException {
+            Args.checkArity(arguments, 1);
+            OQLEngine.ObjectVisitor visitor = (OQLEngine.ObjectVisitor) HeapLanguage.asHostObject(arguments[0]);
+            return new VisitorObject(visitor);
+        }
+
+    }
 
     /**
      * Bind all global symbols into the context bindings of a specific language. Context can be either provided

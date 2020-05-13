@@ -56,7 +56,7 @@ public class OQLQuery {
     public String buildJS() {
         if (className == null || instanceName == null) {
             // The query is only "select `JS_expression`" - in that case, just eval it
-            return "{ let result = "+selectExpression+"; let isIterable = result != null && typeof result[Symbol.iterator] === 'function'; if (isIterable) { for (r in result) { if (visitor.visit(result[r])) { break }; }} else { visitor.visit(result); } }";
+            return "{ visitor = wrapVisitor(visitor); let result = "+selectExpression+"; let isIterable = result != null && typeof result[Symbol.iterator] === 'function'; if (isIterable) { for (r in result) { if (visitor.visit(result[r])) { break }; }} else { visitor.visit(result); } }";
         } else {
             // The query is "select `JS_expression` from `class_name` `identifier`
             // visitor is
@@ -71,7 +71,7 @@ public class OQLQuery {
                 whereFunction = "function __where__("+instanceName+") { return "+whereExpression+" };";
                 resultsIterator = "while (iterator.hasNext()) { let item = iterator.next(); if(__where__(item)) { if (visitor.visit(__select__(item))) { break; } } };";
             }
-            return "{" + selectFunction + whereFunction + iteratorConstruction + resultsIterator + "}";
+            return "{ visitor = wrapVisitor(visitor); " + selectFunction + whereFunction + iteratorConstruction + resultsIterator + "}";
         }
     }
 

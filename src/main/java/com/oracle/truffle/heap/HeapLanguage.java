@@ -191,6 +191,10 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         return HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment().asGuestValue(value);
     }
 
+    public static Object asHostObject(Object value) {
+        return HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment().asHostObject(value);
+    }
+
     @Override
     protected State createContext(Env env) {
         State state = new State(env);
@@ -336,11 +340,12 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         // Extra symbols provided by us:
         public static final String SET_SCRIPT_LANGUAGE = "setScriptLanguage";
         public static final String BIND_GLOBAL_SYMBOLS = "bindGlobalSymbols";
+        public static final String WRAP_VISITOR = "wrapVisitor";
 
         private static final MemberDescriptor MEMBERS = MemberDescriptor.properties(
                 ALLOC_TRACE, CLASS_OF, FOR_EACH_REFERRER, FOR_EACH_REFEREE, IDENTICAL, OBJECT_ID, REACHABLES, REFERRERS, REFEREES, REFERS, ROOT, SIZE_OF, TO_HTML,
                 CONCAT, CONTAINS, COUNT, FILTER, LENGTH, MAP, MAX, MIN, SORT, SUM, TOP, TO_ARRAY, UNIQUE,
-                SET_SCRIPT_LANGUAGE, BIND_GLOBAL_SYMBOLS
+                SET_SCRIPT_LANGUAGE, BIND_GLOBAL_SYMBOLS, WRAP_VISITOR
         );
 
         public static final Map<String, TruffleObject> INSTANCES = new HashMap<>();
@@ -376,6 +381,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
 
             INSTANCES.put(SET_SCRIPT_LANGUAGE, BuiltIns.SetScriptLanguage.INSTANCE);
             INSTANCES.put(BIND_GLOBAL_SYMBOLS, BuiltIns.BindGlobalSymbols.INSTANCE);
+            INSTANCES.put(WRAP_VISITOR, BuiltIns.WrapVisitor.INSTANCE);
         }
 
         @ExportMessage

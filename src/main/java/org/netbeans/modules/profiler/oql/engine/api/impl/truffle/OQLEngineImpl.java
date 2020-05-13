@@ -24,7 +24,6 @@ public class OQLEngineImpl {
         ctx.initialize("js");
 
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.SET_SCRIPT_LANGUAGE).execute("js");
-        ctx.eval("js", "Polyglot.import('Heap.bindGlobalSymbols')(this)");
         // Should be the same as
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.BIND_GLOBAL_SYMBOLS).execute(ctx.getBindings("js"));
 
@@ -47,7 +46,7 @@ public class OQLEngineImpl {
             return;
         }
         visitor = (visitor == null) ? OQLEngine.ObjectVisitor.DEFAULT : visitor;
-        ctx.getBindings("js").putMember("visitor", new VisitorObject(visitor));
+        ctx.getBindings("js").putMember("visitor", visitor);
         System.out.println("Query:"+parsed.buildJS());
         Source querySrc = Source.newBuilder("js", parsed.buildJS(), "fn.js").build();
         ctx.eval(querySrc);
