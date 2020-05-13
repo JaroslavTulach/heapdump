@@ -1,4 +1,4 @@
-package com.oracle.truffle.api.interop;
+package com.oracle.truffle.heap.interop;
 
 import org.netbeans.api.annotations.common.NonNull;
 

@@ -4,10 +4,11 @@ import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.heap.interop.Args;
+import com.oracle.truffle.heap.interop.Iterators;
 import org.netbeans.lib.profiler.heap.FieldValue;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
-import org.netbeans.modules.profiler.oql.engine.api.impl.ReachableExcludes;
 import org.netbeans.modules.profiler.oql.engine.api.impl.ReachableObjects;
 
 import java.util.ArrayList;

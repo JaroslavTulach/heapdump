@@ -1,5 +1,7 @@
-package com.oracle.truffle.api.interop;
+package com.oracle.truffle.heap.interop;
 
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.heap.interop.MemberDescriptor;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

@@ -3,6 +3,7 @@ package com.oracle.truffle.heap;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.heap.interop.*;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.Instance;

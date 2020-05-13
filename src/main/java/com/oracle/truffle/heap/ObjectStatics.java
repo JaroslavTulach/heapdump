@@ -1,9 +1,9 @@
 package com.oracle.truffle.heap;
 
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.MemberDescriptor;
+import com.oracle.truffle.heap.interop.MemberDescriptor;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.Types;
+import com.oracle.truffle.heap.interop.Types;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import org.netbeans.api.annotations.common.NonNull;

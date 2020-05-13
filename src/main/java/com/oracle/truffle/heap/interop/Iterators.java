@@ -1,4 +1,6 @@
-package com.oracle.truffle.api.interop;
+package com.oracle.truffle.heap.interop;
+
+import com.oracle.truffle.api.interop.*;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
