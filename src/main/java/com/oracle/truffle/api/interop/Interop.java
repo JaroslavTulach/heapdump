@@ -31,6 +31,14 @@ public interface Interop {
     }
 
     /**
+     * Rethrow the given exception, possibly as runtime exception.
+     */
+    static <E extends Exception> E rethrow(Class<E> type, Exception ex) throws E {
+        //noinspection unchecked - this is intentional
+        throw (E) ex;
+    }
+
+    /**
      * Used by {@link Interop#wrapCallTarget(CallTarget, TruffleLanguage.Env)}
      * to create interop friendly call targets.
      */

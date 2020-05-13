@@ -4,9 +4,13 @@ import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import org.graalvm.polyglot.Value;
-import org.netbeans.api.annotations.common.NullAllowed;
-import org.netbeans.modules.profiler.oql.engine.api.OQLEngine;
+import org.netbeans.api.annotations.common.NonNull;
+import org.netbeans.lib.profiler.heap.Heap;
+import org.netbeans.lib.profiler.heap.Instance;
+import org.netbeans.lib.profiler.heap.JavaClass;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Map;
 
 @ExportLibrary(InteropLibrary.class)
@@ -15,11 +19,25 @@ public class VisitorObject implements TruffleObject {
     private static final String VISIT = "visit";
     private static final MemberDescriptor MEMBERS = MemberDescriptor.functions(VISIT);
 
-    @NullAllowed
-    private final OQLEngine.ObjectVisitor visitor;
+    //@NonNull
+    //private final Object visitor;
 
-    public VisitorObject(@NullAllowed OQLEngine.ObjectVisitor visitor) {
-        this.visitor = visitor;
+    private final Object hostVisitor;
+    private final Method hostVisitorMethod;
+
+    public VisitorObject(@NonNull Object visitor) {
+        //this.visitor = visitor;
+        this.hostVisitor = HeapLanguage.tryAsHostObject(visitor);
+        if (this.hostVisitor == null) {
+            throw new IllegalArgumentException("Expected the visitor to be a host object.");
+        } else {
+            try {
+                this.hostVisitorMethod = this.hostVisitor.getClass().getMethod("visit", Object.class);
+                this.hostVisitorMethod.setAccessible(true);
+            } catch (NoSuchMethodException e) {
+                throw new IllegalArgumentException("Expected the visitor to be a host object with visit(Object) method.");
+            }
+        }
     }
 
     @ExportMessage
@@ -39,69 +57,58 @@ public class VisitorObject implements TruffleObject {
 
     @ExportMessage
     static Object invokeMember(VisitorObject receiver, String member, Object[] arguments)
-            throws UnknownIdentifierException, ArityException {
+            throws UnknownIdentifierException, ArityException, UnsupportedTypeException, UnsupportedMessageException {
         if (VISIT.equals(member)) {
             Args.checkArity(arguments, 1);
-            boolean finished = false;
-            if (receiver.visitor != null) {
-                Object value = arguments[0];
-                return receiver.dispatchValue(value);
-            }
-            return finished;
+            return receiver.dispatchValue(arguments[0]);
         } else {
             throw UnknownIdentifierException.create(member);
         }
     }
 
-    private boolean dispatchValue(Object value) {
-        // TODO: WTF this control flow?
-        if (visitor == null) return false;
+    private boolean dispatchValue(Object value) throws UnsupportedMessageException {
         if (value == null) return false;
         InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-        // If this object is "iterable", deliver each item separately...
-        Boolean heapDispatch = dispatchHeap(value); // first, unwrap all ArrayInstances, etc. because we don't want to iterate those...
-        if (heapDispatch != null) {
-            return heapDispatch;
-        }
-        if (value instanceof TruffleObject && interop.hasArrayElements(value)) {
-            try {
-                int i = 0;
-                while (i < interop.getArraySize(value)) {
-                    if (interop.isArrayElementReadable(value, i)) {
+        Object directDispatch = null;
+        if (Types.isPrimitiveValue(value)) {
+            directDispatch = value;
+        } else if (value instanceof ObjectInstance) {
+            // First, try to dispatch heap language objects as their original interfaces using reflection...
+            Instance instance = ((ObjectInstance) value).getInstance();
+            directDispatch = HeapLanguage.asHostInterface(instance, Instance.class.getName());
+        } else if (value instanceof ObjectJavaClass) {
+            JavaClass javaClass = ((ObjectJavaClass) value).getJavaClass();
+            directDispatch = HeapLanguage.asHostInterface(javaClass, JavaClass.class.getName());
+        } else if (value instanceof ObjectHeap) {
+            Heap heap = ((ObjectHeap) value).getHeap();
+            directDispatch = HeapLanguage.asHostInterface(heap, Heap.class.getName());
+        } else if (interop.hasArrayElements(value)) {
+            // Second, if the object is an array, we recursively dispatch every element...
+            int i = 0;
+            while (i < interop.getArraySize(value)) {
+                if (interop.isArrayElementReadable(value, i)) {
+                    try {
                         Object item = interop.readArrayElement(value, i);
                         if (dispatchValue(item)) return true;
+                    } catch (InvalidArrayIndexException e) {
+                        Interop.rethrow(RuntimeException.class, e);
                     }
-                    i += 1;
                 }
-                return false;
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw new IllegalStateException("Value is array, but cannot access elemnts.", e);
+                i += 1;
             }
+        } else if (interop.hasMembers(value)) {
+            // Third, if the value has members, we can cast it to Map...
+            directDispatch = Value.asValue(value).as(Map.class);
         } else {
-            value = transformValue(value);
-            return visitor.visit(value);
+            // When there is nothing else to do, well, turn it into a value and hope for the best.
+            directDispatch = Value.asValue(value);
         }
-    }
 
-    private Boolean dispatchHeap(Object value) {
-        if (visitor == null) return null;
-        if (value instanceof ObjectInstance) return visitor.visit(((ObjectInstance) value).getInstance());
-        else if (value instanceof ObjectJavaClass) return visitor.visit(((ObjectJavaClass) value).getJavaClass());
-        else if (value instanceof ObjectHeap) return visitor.visit(((ObjectHeap) value).getHeap());
-        return null;
-    }
-
-    private static Object transformValue(Object value) {
-        // TODO: Cover other objects as well...
-        // This is a heap language object, just unwrap it, keep primitive values and try to convert everything else to map...
-        if (Types.isNull(value)) return null;
-        //else if (value instanceof ObjectInstance) return ((ObjectInstance) value).getInstance();
-        //else if (value instanceof ObjectJavaClass) return ((ObjectJavaClass) value).getJavaClass();
-        //else if (value instanceof ObjectHeap) return ((ObjectHeap) value).getHeap();
-        else if (!Types.isPrimitiveValue(value)) {
-            return Value.asValue(value).as(Map.class);
+        try {
+            return directDispatch != null && (boolean) this.hostVisitorMethod.invoke(this.hostVisitor, directDispatch);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw Interop.rethrow(RuntimeException.class, e);
         }
-        return value;
     }
 
 }

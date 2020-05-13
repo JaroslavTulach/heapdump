@@ -10,6 +10,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import org.graalvm.polyglot.Value;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
@@ -191,8 +192,20 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         return HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment().asGuestValue(value);
     }
 
-    public static Object asHostObject(Object value) {
-        return HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment().asHostObject(value);
+    public static Object tryAsHostObject(Object value) {
+        TruffleLanguage.Env env = HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment();
+        return env.isHostObject(value) ? env.asHostObject(value) : null;
+    }
+
+    public static Object getHostSymbol(String name) {
+        return HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment().lookupHostSymbol(name);
+    }
+
+    public static Object asHostInterface(Object object, String interfaceName) {
+        TruffleLanguage.Env env = HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment();
+        Object interfaceHostObject = env.lookupHostSymbol(interfaceName);
+        Class<?> hostInterface = (Class<?>) env.asHostObject(interfaceHostObject);
+        return Value.asValue(object).as(hostInterface);
     }
 
     @Override

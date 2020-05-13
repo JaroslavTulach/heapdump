@@ -1,10 +1,13 @@
 package com.oracle.truffle.heap;
 
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import org.netbeans.modules.profiler.oql.engine.api.OQLEngine;
+import com.oracle.truffle.api.nodes.Node;
 
 import java.util.Map;
 
@@ -14,6 +17,9 @@ import java.util.Map;
  */
 interface BuiltIns {
 
+    /**
+     *
+     */
     @ExportLibrary(InteropLibrary.class)
     final class WrapVisitor implements TruffleObject {
 
@@ -29,8 +35,7 @@ interface BuiltIns {
         @ExportMessage
         static Object execute(WrapVisitor receiver, Object[] arguments) throws ArityException {
             Args.checkArity(arguments, 1);
-            OQLEngine.ObjectVisitor visitor = (OQLEngine.ObjectVisitor) HeapLanguage.asHostObject(arguments[0]);
-            return new VisitorObject(visitor);
+            return new VisitorObject(arguments[0]);
         }
 
     }

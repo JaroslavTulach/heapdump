@@ -3,7 +3,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "5.2.0"    // build a jar of heap language with all dependencies
 
     // Jacoco only works on Hotspot, not on Graal...
-    id 'jacoco'
+    //id 'jacoco'
 }
 
 repositories {
@@ -29,7 +29,7 @@ test.dependsOn shadowJar
 
 test {
     // Tell Graal to add heap language into our language classpath.
-    jvmArgs "-Dtruffle.class.path.append=build/libs/heap-language-all.jar"
+    jvmArgs "-Dtruffle.class.path.append=build/libs/heap-language-all.jar"//, "-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI", "-Dgraal.Dump=:1", "-Dgraal.PrintGraph=Network"
 }
 
 test {

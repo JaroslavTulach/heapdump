@@ -22,6 +22,7 @@ import static org.junit.Assert.*;
  * @author Jaroslav Bachorik
  */
 public class OQLEngineTest {
+    //private OQLEngine instance;
     private OQLEngineImpl instance;
 
     public OQLEngineTest() {
@@ -31,6 +32,7 @@ public class OQLEngineTest {
     public void setUp() throws URISyntaxException, IOException {
         URL url = getClass().getResource("small_heap.bin");
         File heapFile = new File(url.toURI());
+        //instance = new OQLEngine(HeapFactory.createHeap(new File(url.toURI())));
         instance = new OQLEngineImpl(heapFile);
     }
 
