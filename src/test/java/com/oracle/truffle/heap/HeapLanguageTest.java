@@ -1,6 +1,5 @@
 package com.oracle.truffle.heap;
 
-import com.oracle.truffle.heap.util.HeapLanguageUtils;
 import org.graalvm.polyglot.*;
 import org.junit.Before;
 
@@ -25,7 +24,7 @@ public abstract class HeapLanguageTest {
 
         URL url = getClass().getClassLoader().getResource("org/netbeans/modules/profiler/oql/engine/api/impl/truffle/small_heap.bin");
         File heapFile = new File(url.toURI());
-        Source heapSrc = Source.newBuilder("heap", HeapLanguageUtils.bytesOf(heapFile), heapFile.getName())
+        Source heapSrc = Source.newBuilder("heap", HeapUtils.bytesOf(heapFile), heapFile.getName())
                 .uri(heapFile.toURI())
                 .mimeType("application/x-netbeans-profiler-hprof").build();
         this.heap = this.ctx.eval(heapSrc);

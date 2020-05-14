@@ -1,7 +1,7 @@
 package org.netbeans.modules.profiler.oql.engine.api.impl.truffle;
 
 import com.oracle.truffle.heap.HeapLanguage;
-import com.oracle.truffle.heap.util.HeapLanguageUtils;
+import com.oracle.truffle.heap.HeapUtils;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.Source;
@@ -25,7 +25,7 @@ public class OQLEngineImpl {
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.SET_SCRIPT_LANGUAGE).execute("js");
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.BIND_GLOBAL_SYMBOLS).execute(ctx.getBindings("js"));
 
-        Source heapSrc = Source.newBuilder("heap", HeapLanguageUtils.bytesOf(heapFile), heapFile.getName())
+        Source heapSrc = Source.newBuilder("heap", HeapUtils.bytesOf(heapFile), heapFile.getName())
                 .uri(heapFile.toURI())
                 .mimeType("application/x-netbeans-profiler-hprof").build();
         Value heap = this.ctx.eval(heapSrc);

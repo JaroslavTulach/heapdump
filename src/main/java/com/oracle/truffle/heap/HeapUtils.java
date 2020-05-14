@@ -1,10 +1,16 @@
 package com.oracle.truffle.heap;
 
+import org.graalvm.polyglot.io.ByteSequence;
 import org.netbeans.lib.profiler.heap.*;
 import org.netbeans.modules.profiler.oql.engine.api.ReferenceChain;
 import org.netbeans.modules.profiler.oql.engine.api.impl.TreeIterator;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -12,6 +18,24 @@ import static org.netbeans.lib.profiler.utils.VMUtils.*;
 
 public abstract class HeapUtils {
     private HeapUtils() {}
+
+    public static ByteSequence bytesOf(File heapFile) throws IOException {
+        long length = heapFile.length();
+        try (RandomAccessFile file = new RandomAccessFile(heapFile, "r")) {
+            MappedByteBuffer out = file.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, length);
+            return new ByteSequence() {
+                @Override
+                public int length() {
+                    return (int) heapFile.length();
+                }
+
+                @Override
+                public byte byteAt(int index) {
+                    return out.get(index);
+                }
+            };
+        }
+    }
 
     public static String instanceString(Instance instance) {
         try {
