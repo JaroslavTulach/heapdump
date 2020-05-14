@@ -3,10 +3,7 @@ package com.oracle.truffle.heap;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.heap.interop.Args;
-import com.oracle.truffle.heap.interop.Interop;
-import com.oracle.truffle.heap.interop.MemberDescriptor;
-import com.oracle.truffle.heap.interop.Types;
+import com.oracle.truffle.heap.interop.*;
 import org.graalvm.polyglot.Value;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.lib.profiler.heap.Heap;
@@ -61,7 +58,7 @@ public class VisitorObject implements TruffleObject {
 
     @ExportMessage
     static Object invokeMember(VisitorObject receiver, String member, Object[] arguments)
-            throws UnknownIdentifierException, ArityException, UnsupportedTypeException, UnsupportedMessageException {
+            throws UnknownIdentifierException, ArityException, UnsupportedMessageException {
         if (VISIT.equals(member)) {
             Args.checkArity(arguments, 1);
             return receiver.dispatchValue(arguments[0]);
@@ -95,7 +92,7 @@ public class VisitorObject implements TruffleObject {
                         Object item = interop.readArrayElement(value, i);
                         if (dispatchValue(item)) return true;
                     } catch (InvalidArrayIndexException e) {
-                        Interop.rethrow(RuntimeException.class, e);
+                        Errors.rethrow(RuntimeException.class, e);
                     }
                 }
                 i += 1;
@@ -111,7 +108,7 @@ public class VisitorObject implements TruffleObject {
         try {
             return directDispatch != null && (boolean) this.hostVisitorMethod.invoke(this.hostVisitor, directDispatch);
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw Interop.rethrow(RuntimeException.class, e);
+            return Errors.rethrow(RuntimeException.class, e);
         }
     }
 

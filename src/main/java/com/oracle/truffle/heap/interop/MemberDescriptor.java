@@ -64,8 +64,9 @@ public final class MemberDescriptor implements TruffleObject {
 
     public Iterable<String> getProperties() {
         if (properties == null) return Collections.emptyList();
-        return () -> new Iterator<String>() {
+        return () -> new Iterator<>() {
             int i = 0;
+
             @Override
             public boolean hasNext() {
                 return i < properties.length;
@@ -74,7 +75,7 @@ public final class MemberDescriptor implements TruffleObject {
             @Override
             public String next() {
                 i += 1;
-                return properties[i-1];
+                return properties[i - 1];
             }
         };
     }

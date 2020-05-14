@@ -24,19 +24,12 @@ public final class Types {
     }
 
     public static boolean isNull(Object obj, InteropLibrary interop) {
-        if (obj == null) {
-            return true;
-        } else if (obj instanceof TruffleObject) {
-            return interop.isNull(obj);
-        }
-        return false;
+        return obj == null || ((obj instanceof TruffleObject) && interop.isNull(obj));
     }
 
     public static int compareValues(Object lhs, Object rhs) {
         Integer result = tryCompareValues(lhs, rhs);
-        if (result != null) return result; else {
-            throw new IllegalArgumentException("Cannot compare "+lhs+" to "+rhs+".");
-        }
+        return result != null ? result : Errors.illegalArgument("Cannot compare "+lhs+" to "+rhs+".");
     }
 
     public static Integer tryCompareValues(Object lhs, Object rhs) {
@@ -51,39 +44,27 @@ public final class Types {
     public static Integer tryCompareStringValues(Object lhs, Object rhs) {
         String stringLHS = tryAsString(lhs);
         String stringRHS = tryAsString(rhs);
-        if (stringLHS == null || stringRHS == null) return null; else {
-            return stringLHS.compareTo(stringRHS);
-        }
+        return (stringLHS == null || stringRHS == null) ? null : stringLHS.compareTo(stringRHS);
     }
 
     public static Integer tryCompareIntegralValues(Object lhs, Object rhs) {
         Long longLHS = tryAsIntegralNumber(lhs);
         Long longRHS = tryAsIntegralNumber(rhs);
-        if (longLHS == null || longRHS == null) return null; else {
-            return Long.compare(longLHS, longRHS);
-        }
+        return (longLHS == null || longRHS == null) ? null : Long.compare(longLHS, longRHS);
     }
 
     public static Integer tryCompareFloatingPointValues(Object lhs, Object rhs) {
         Double doubleLHS = tryAsFloatingPointNumber(lhs);
         Double doubleRHS = tryAsFloatingPointNumber(rhs);
-        if (doubleLHS == null || doubleRHS == null) return null; else {
-            return Double.compare(doubleLHS, doubleRHS);
-        }
+        return (doubleLHS == null || doubleRHS == null) ? null : Double.compare(doubleLHS, doubleRHS);
     }
 
     public static Integer tryCompareCharacterValues(Object lhs, Object rhs) {
-        if (!(lhs instanceof Character && rhs instanceof Character)) return null; else {
-            return Character.compare((Character) lhs, (Character) rhs);
-        }
+        return (lhs instanceof Character && rhs instanceof Character) ? Character.compare((Character) lhs, (Character) rhs) : null;
     }
 
     public static <T extends TruffleObject> T tryAsInstance(Object value, Class<T> clazz) {
-        if (clazz.isInstance(value)) {
-            return clazz.cast(value);
-        } else {
-            return null;
-        }
+        return clazz.isInstance(value) ? clazz.cast(value) : null;
     }
 
     public static boolean asBoolean(Object value) {
@@ -92,9 +73,7 @@ public final class Types {
 
     public static boolean asBoolean(Object value, InteropLibrary interop) {
         Boolean bool = tryAsBoolean(value, interop);
-        if (bool != null) return bool; else {
-            throw new ClassCastException("Cannot cast "+value+" to boolean.");
-        }
+        return bool != null ? bool : Errors.classCast(value, Boolean.class);
     }
 
     public static Boolean tryAsBoolean(Object value) {
@@ -109,7 +88,7 @@ public final class Types {
                 try {
                     return interop.asBoolean(value);
                 } catch (UnsupportedMessageException e) {
-                    throw new IllegalStateException("Argument is boolean but does not implement `asBoolean`.", e);
+                    Errors.rethrow(RuntimeException.class, e);
                 }
             }
         }
@@ -118,9 +97,7 @@ public final class Types {
 
     public static long asIntegralNumber(Object number) {
         Long value = tryAsIntegralNumber(number);
-        if (value != null) return value; else {
-            throw new ClassCastException("Cannot cast "+value+" to integral number.");
-        }
+        return value != null ? value : Errors.classCast(value, Long.class);
     }
 
     public static Long tryAsIntegralNumber(Object number) {
@@ -141,7 +118,7 @@ public final class Types {
                 try {
                     return interop.asLong(number);
                 } catch (UnsupportedMessageException e) {
-                    throw new IllegalStateException("Fits into long, but does not implement `asLong`.", e);
+                    Errors.rethrow(RuntimeException.class, e);
                 }
             }
         }
@@ -150,9 +127,7 @@ public final class Types {
 
     public static double asFloatingPointNumber(Object number) {
         Double value = tryAsFloatingPointNumber(number);
-        if (value != null) return value; else {
-            throw new ClassCastException("Cannot cast "+number+" to number.");
-        }
+        return value != null ? value : Errors.classCast(number, Double.class);
     }
 
     public static Double tryAsFloatingPointNumber(Object number) {
@@ -169,7 +144,7 @@ public final class Types {
                 try {
                     return interop.asDouble(number);
                 } catch (UnsupportedMessageException e) {
-                    throw new IllegalStateException("Fits into double, but does not implement `asDouble`.", e);
+                    Errors.rethrow(RuntimeException.class, e);
                 }
             }
         }
@@ -185,9 +160,7 @@ public final class Types {
 
     public static String asString(Object value, InteropLibrary interop) {
         String string = tryAsString(value, interop);
-        if (string != null) return string; else {
-            throw new ClassCastException("Cannot cast "+value+" to String.");
-        }
+        return string != null ? string : Errors.classCast(value, String.class);
     }
 
     public static String tryAsString(Object value) {
@@ -202,7 +175,7 @@ public final class Types {
                 try {
                     return interop.asString(value);
                 } catch (UnsupportedMessageException e) {
-                    throw new IllegalStateException("Argument is string but does not implement `asString`.", e);
+                    Errors.rethrow(RuntimeException.class, e);
                 }
             }
         }
@@ -214,11 +187,7 @@ public final class Types {
     }
 
     public static TruffleObject tryAsExecutable(Object value, InteropLibrary interop) {
-        if (value instanceof TruffleObject && interop.isExecutable(value)) {
-            return (TruffleObject) value;
-        } else {
-            return null;
-        }
+        return (value instanceof TruffleObject && interop.isExecutable(value)) ? (TruffleObject) value : null;
     }
 
     public static TruffleObject tryAsArray(Object value) {
@@ -226,11 +195,7 @@ public final class Types {
     }
 
     public static TruffleObject tryAsArray(Object value, InteropLibrary interop) {
-        if (value instanceof TruffleObject && interop.hasArrayElements(value)) {
-            return (TruffleObject) value;
-        } else {
-            return null;
-        }
+        return (value instanceof TruffleObject && interop.hasArrayElements(value)) ? (TruffleObject) value : null;
     }
 
     /**
@@ -241,16 +206,12 @@ public final class Types {
             try {
                 Object descriptor = interop.getMembers(value, false);
                 TruffleObject members = Types.tryAsArray(descriptor, interop);
-                if (members == null) {
-                    throw new IllegalStateException("Members descriptor must be a truffle array. Found: "+descriptor+".");
-                }
-                return members;
+                return members != null ? members : Errors.illegalState("Members descriptor must be a truffle array. Found: "+descriptor+".");
             } catch (UnsupportedMessageException e) {
-                throw new IllegalStateException("Argument has members but does not implement `getMembers`.", e);
+                Errors.rethrow(RuntimeException.class, e);
             }
-        } else {
-            return null;
         }
+        return null;
     }
 
     public static TruffleObject tryReadMemberDescriptor(Object value) {

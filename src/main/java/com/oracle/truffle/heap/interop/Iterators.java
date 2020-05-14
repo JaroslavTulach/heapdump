@@ -3,7 +3,6 @@ package com.oracle.truffle.heap.interop;
 import com.oracle.truffle.api.interop.*;
 
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 /**
  * Utility methods for treating truffle interop objects as iterators and vice versa.
@@ -34,7 +33,7 @@ public final class Iterators {
     public static Iterator<Character> tryAsStringIterator(Object value, InteropLibrary interop) {
         String string = Types.tryAsString(value, interop);
         if (string == null) return null;
-        return new Iterator<Character>() {
+        return new Iterator<>() {
 
             private int index = 0;
 
@@ -54,7 +53,7 @@ public final class Iterators {
     public static Iterator<Object> tryAsArrayIterator(Object value, InteropLibrary interop) {
         TruffleObject array = Types.tryAsArray(value, interop);
         if (array == null) return null;
-        return new Iterator<Object>() {
+        return new Iterator<>() {
 
             private int index = 0;
 
@@ -70,7 +69,7 @@ public final class Iterators {
                 try {
                     return interop.readArrayElement(value, index - 1);
                 } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                    throw new NoSuchElementException("Cannot access array element: "+e);
+                    return Errors.noSuchElement(e, "Cannot access array element at index %d.", index - 1);
                 }
             }
         };
@@ -79,18 +78,18 @@ public final class Iterators {
     public static Iterator<Object> tryAsMemberIterator(Object value, InteropLibrary interop) {
         TruffleObject members = Types.tryReadMemberDescriptor(value, interop);
         if (members == null) return null;
-        return new Iterator<Object>() {
+        return new Iterator<>() {
             private int index = 0;
+
             @Override
             public boolean hasNext() {
                 while (interop.isArrayElementReadable(members, index)) {
                     try {
                         String key = Types.asString(interop.readArrayElement(members, index), interop);
-                        if (interop.isMemberReadable(value, key)) return true; {
-                            index += 1;
-                        }
+                        if (interop.isMemberReadable(value, key)) return true;
+                        index += 1;
                     } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                        throw new IllegalStateException("Cannot read array element declared as readable.", e);
+                        Errors.rethrow(RuntimeException.class, e);  // if element is readable, the methods mut not fail...
                     }
                 }
                 return false;
@@ -98,12 +97,13 @@ public final class Iterators {
 
             @Override
             public Object next() {
+                index += 1;
+                String key = null;
                 try {
-                    index += 1;
-                    String key = Types.asString(interop.readArrayElement(members, index - 1), interop);
+                    key = Types.asString(interop.readArrayElement(members, index - 1), interop);
                     return interop.readMember(value, key);
                 } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException e) {
-                    throw new NoSuchElementException("Cannot access object member: "+e);
+                    return Errors.noSuchElement(e, "Cannot access object member %s at index %d.", key, index - 1);
                 }
             }
         };
@@ -112,17 +112,15 @@ public final class Iterators {
     public static Iterator<? extends IndexPair<?, ?>> tryAsIndexedIterator(Object value, InteropLibrary interop) {
         Iterator<? extends IndexPair<?, ?>> result;
         result = tryAsIndexedStringIterator(value, interop);
-        if (result != null) return result;
-        result = tryAsIndexedArrayIterator(value, interop);
-        if (result != null) return result;
-        result = tryAsIndexedMemberIterator(value, interop);
+        if (result == null) result = tryAsIndexedArrayIterator(value, interop);
+        if (result == null) result = tryAsIndexedMemberIterator(value, interop);
         return result;
     }
 
     public static Iterator<IndexPair<Integer, Character>> tryAsIndexedStringIterator(Object value, InteropLibrary interop) {
         String string = Types.tryAsString(value, interop);
         if (string == null) return null;
-        return new Iterator<IndexPair<Integer, Character>>() {
+        return new Iterator<>() {
 
             private int index = 0;
 
@@ -142,7 +140,7 @@ public final class Iterators {
     public static Iterator<IndexPair<Integer, Object>> tryAsIndexedArrayIterator(Object value, InteropLibrary interop) {
         TruffleObject array = Types.tryAsArray(value, interop);
         if (array == null) return null;
-        return new Iterator<IndexPair<Integer, Object>>() {
+        return new Iterator<>() {
 
             private int index = 0;
 
@@ -158,7 +156,7 @@ public final class Iterators {
                 try {
                     return new IndexPair<>(index - 1, interop.readArrayElement(value, index - 1));
                 } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                    throw new NoSuchElementException("Cannot access array element: "+e);
+                    return Errors.noSuchElement(e, "Cannot access array element at %d.", index - 1);
                 }
             }
         };
@@ -167,18 +165,18 @@ public final class Iterators {
     public static Iterator<IndexPair<String, Object>> tryAsIndexedMemberIterator(Object value, InteropLibrary interop) {
         TruffleObject members = Types.tryReadMemberDescriptor(value, interop);
         if (members == null) return null;
-        return new Iterator<IndexPair<String, Object>>() {
+        return new Iterator<>() {
             private int index = 0;
+
             @Override
             public boolean hasNext() {
                 while (interop.isArrayElementReadable(members, index)) {
                     try {
                         String key = Types.asString(interop.readArrayElement(members, index), interop);
-                        if (interop.isMemberReadable(value, key)) return true; {
-                            index += 1;
-                        }
+                        if (interop.isMemberReadable(value, key)) return true;
+                        index += 1;
                     } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                        throw new IllegalStateException("Cannot read array element declared as readable.", e);
+                        Errors.rethrow(RuntimeException.class, e);
                     }
                 }
                 return false;
@@ -186,12 +184,13 @@ public final class Iterators {
 
             @Override
             public IndexPair<String, Object> next() {
+                index += 1;
+                String key = null;
                 try {
-                    index += 1;
-                    String key = Types.asString(interop.readArrayElement(members, index - 1), interop);
+                    key = Types.asString(interop.readArrayElement(members, index - 1), interop);
                     return new IndexPair<>(key, interop.readMember(value, key));
                 } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException e) {
-                    throw new NoSuchElementException("Cannot access object member: "+e);
+                    return Errors.noSuchElement(e, "Cannot access object member %s at index %d.", key, index - 1);
                 }
             }
         };

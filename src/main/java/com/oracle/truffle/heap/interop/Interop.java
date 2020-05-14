@@ -1,6 +1,7 @@
 package com.oracle.truffle.heap.interop;
 
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -27,14 +28,6 @@ public interface Interop {
      */
     static TruffleObject wrapArray(Object[] items) {
         return new ReadOnlyArray(items);
-    }
-
-    /**
-     * Rethrow the given exception, possibly as runtime exception.
-     */
-    static <E extends Exception> E rethrow(Class<E> type, Exception ex) throws E {
-        //noinspection unchecked - this is intentional
-        throw (E) ex;
     }
 
     /**
