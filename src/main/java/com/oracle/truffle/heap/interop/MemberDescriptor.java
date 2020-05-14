@@ -64,7 +64,7 @@ public final class MemberDescriptor implements TruffleObject {
 
     public Iterable<String> getProperties() {
         if (properties == null) return Collections.emptyList();
-        return () -> new Iterator<>() {
+        return () -> new Iterator<String>() {
             int i = 0;
 
             @Override

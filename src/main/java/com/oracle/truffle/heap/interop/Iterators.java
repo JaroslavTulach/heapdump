@@ -33,7 +33,7 @@ public final class Iterators {
     public static Iterator<Character> tryAsStringIterator(Object value, InteropLibrary interop) {
         String string = Types.tryAsString(value, interop);
         if (string == null) return null;
-        return new Iterator<>() {
+        return new Iterator<Character>() {
 
             private int index = 0;
 
@@ -53,7 +53,7 @@ public final class Iterators {
     public static Iterator<Object> tryAsArrayIterator(Object value, InteropLibrary interop) {
         TruffleObject array = Types.tryAsArray(value, interop);
         if (array == null) return null;
-        return new Iterator<>() {
+        return new Iterator<Object>() {
 
             private int index = 0;
 
@@ -78,7 +78,7 @@ public final class Iterators {
     public static Iterator<Object> tryAsMemberIterator(Object value, InteropLibrary interop) {
         TruffleObject members = Types.tryReadMemberDescriptor(value, interop);
         if (members == null) return null;
-        return new Iterator<>() {
+        return new Iterator<Object>() {
             private int index = 0;
 
             @Override
@@ -120,7 +120,7 @@ public final class Iterators {
     public static Iterator<IndexPair<Integer, Character>> tryAsIndexedStringIterator(Object value, InteropLibrary interop) {
         String string = Types.tryAsString(value, interop);
         if (string == null) return null;
-        return new Iterator<>() {
+        return new Iterator<IndexPair<Integer, Character>>() {
 
             private int index = 0;
 
@@ -140,7 +140,7 @@ public final class Iterators {
     public static Iterator<IndexPair<Integer, Object>> tryAsIndexedArrayIterator(Object value, InteropLibrary interop) {
         TruffleObject array = Types.tryAsArray(value, interop);
         if (array == null) return null;
-        return new Iterator<>() {
+        return new Iterator<IndexPair<Integer, Object>>() {
 
             private int index = 0;
 
@@ -165,7 +165,7 @@ public final class Iterators {
     public static Iterator<IndexPair<String, Object>> tryAsIndexedMemberIterator(Object value, InteropLibrary interop) {
         TruffleObject members = Types.tryReadMemberDescriptor(value, interop);
         if (members == null) return null;
-        return new Iterator<>() {
+        return new Iterator<IndexPair<String, Object>>() {
             private int index = 0;
 
             @Override
