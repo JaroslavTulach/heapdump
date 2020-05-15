@@ -33,3 +33,5 @@ build
 *.iml
 
 .DS_Store
+
+*.hwcache
