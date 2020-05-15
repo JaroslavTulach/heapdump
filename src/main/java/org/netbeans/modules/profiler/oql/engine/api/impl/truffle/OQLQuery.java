@@ -3,8 +3,9 @@ package org.netbeans.modules.profiler.oql.engine.api.impl.truffle;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
+import org.netbeans.modules.profiler.oql.engine.api.OQLEngine;
 
-public class OQLQuery {
+public class OQLQuery extends OQLEngine.OQLQuery {
 
     @NonNull
     private final String selectExpression;

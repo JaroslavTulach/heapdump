@@ -32,25 +32,49 @@ public class OQLEngineImpl {
         ctx.getBindings("js").putMember("heap", heap);
     }
 
+    public static boolean isOQLSupported() {
+        return true;    // OQL should be always available, although it might be slow in interpreted mode
+    }
+
     public void executeJsQuery(String javascript) throws IOException {
         Source querySrc = Source.newBuilder("js", javascript, "fn.js").build();
         ctx.eval(querySrc);
     }
 
-    public void executeQuery(String query, OQLEngine.ObjectVisitor visitor) throws OQLException, IOException {
-        OQLQuery parsed = parseQuery(query);
-        if (parsed == null) {
-            executeJsQuery(query);
-            return;
+    public void executeQuery(String query, OQLEngine.ObjectVisitor visitor) throws OQLException {
+        try {
+            OQLQuery parsed = parseQuery(query);
+            if (parsed == null) {
+                executeJsQuery(query);
+                return;
+            }
+            visitor = (visitor == null) ? OQLEngine.ObjectVisitor.DEFAULT : visitor;
+            ctx.getBindings("js").putMember("visitor", visitor);
+            //System.out.println("Query:"+parsed.buildJS());
+            Source querySrc = Source.newBuilder("js", parsed.buildJS(), "fn.js").build();
+            ctx.eval(querySrc);
+        } catch (IOException e) {
+            throw new OQLException("Cannot execute JavaScript query.", e);
         }
-        visitor = (visitor == null) ? OQLEngine.ObjectVisitor.DEFAULT : visitor;
-        ctx.getBindings("js").putMember("visitor", visitor);
-        System.out.println("Query:"+parsed.buildJS());
-        Source querySrc = Source.newBuilder("js", parsed.buildJS(), "fn.js").build();
-        ctx.eval(querySrc);
     }
 
-    private OQLQuery parseQuery(String query) throws OQLException {
+    public void cancelQuery() {
+        // TODO: not implemented...
+    }
+
+    public boolean isCancelled() {
+        return false;
+    }
+
+    public Object unwrapJavaObject(Object obj) {
+        return obj; // This should not be needed any more, because the values are unwrapped by truffle/heap language
+    }
+
+    public Object unwrapJavaObject(Object obj, boolean tryAssociative) {
+        return obj;
+    }
+
+    public OQLQuery parseQuery(String query) throws OQLException {
         StringTokenizer st = new StringTokenizer(query);
         if (st.hasMoreTokens()) {
             String first = st.nextToken();
