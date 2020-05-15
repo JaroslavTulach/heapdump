@@ -4,9 +4,10 @@ plugins {
     id 'application'
     id 'java-library'
     id "com.github.johnrengelman.shadow" version "5.2.0"    // build a jar of heap language with all dependencies
+}
 
-    // Jacoco only works on Hotspot, not on Graal...
-    //id 'jacoco'
+if (System.getProperty("java.vm.name").contains("HotSpot")) {
+    apply plugin: 'jacoco'  // Only measure code coverage on HotSpot JVMs, since jacoco is broken on Graal
 }
 
 repositories {
