@@ -1,5 +1,6 @@
 package com.oracle.truffle.heap;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -59,6 +60,8 @@ public final class ObjectJavaClass implements TruffleObject {
     }
 
     /* Name of the class. */
+    // turns out `getName` calls A LOT of complex code underneath which properly messes up the compiler
+    @CompilerDirectives.TruffleBoundary
     private String read_name() {
         return this.clazz.getName();
     }
