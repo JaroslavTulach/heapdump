@@ -1,4 +1,7 @@
+import java.util.stream.Collectors
+
 plugins {
+    id 'application'
     id 'java-library'
     id "com.github.johnrengelman.shadow" version "5.2.0"    // build a jar of heap language with all dependencies
 
@@ -8,6 +11,23 @@ plugins {
 
 repositories {
     jcenter()
+}
+
+application {
+    mainClassName = 'com.oracle.truffle.heap.ScriptRunner'
+    applicationDefaultJvmArgs = ['-Dtruffle.class.path.append=__APP_HOME__/lib/heap-language.jar:__APP_HOME__/lib/org-netbeans-lib-profiler-RELEASE113.jar']
+}
+
+static void replaceInFile(File f, String find, String replace) {
+    f.write(f.readLines().stream().map {l -> l.replace(find, replace) }.collect(Collectors.joining("\n")))
+};
+
+startScripts {
+    doLast {
+        // Replace __APP_HOME__ with $APP_HOME (unix) and %APP_HOME% (windows)
+        replaceInFile(unixScript, "__APP_HOME__", '$APP_HOME')
+        replaceInFile(windowsScript, "__APP_HOME__", '%APP_HOME%')
+    }
 }
 
 dependencies {
@@ -36,4 +56,9 @@ test {
     testLogging {
         events "passed", "skipped", "failed", "standardError" //, "standardOut"
     }
+}
+
+run {
+    /* Pass system property to executing jvm */
+    systemProperty "truffle", System.getProperty("truffle")
 }
