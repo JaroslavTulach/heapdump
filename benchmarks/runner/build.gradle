@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation project(":")
+    implementation 'org.netbeans.modules:org-netbeans-modules-profiler-oql:RELEASE113'
+}
+
+task bench01(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'benchmark.runner.Bench01'
+    args '../dumps/tumor_cell.hprof'
+    jvmArgs = ['-Dbench='+System.getProperty("bench"), '-Dtruffle.class.path.append=../../build/libs/heap-language-all.jar']
+}
+
+bench01.dependsOn ':shadowJar'
