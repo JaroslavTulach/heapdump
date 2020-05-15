@@ -8,3 +8,5 @@
  */
 
 rootProject.name = 'heap-language'
+
+include 'benchmarks:dump-generator'
