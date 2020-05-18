@@ -23,7 +23,7 @@ public abstract class Bench {
         System.out.println("Execute script: " + fileName);
         long start;
         Heap heap;
-        switch (System.getProperty("bench")) {
+        switch (System.getProperty("engine")) {
             case "native":
                 start = System.currentTimeMillis();
                 heap = HeapFactory.createHeap(heapFile);
@@ -53,7 +53,7 @@ public abstract class Bench {
         }
     }
 
-    private static final OQLEngine.ObjectVisitor VISITOR = o -> {
+    public static final OQLEngine.ObjectVisitor VISITOR = o -> {
         if (o instanceof JavaClass) {
             System.out.println("Found java class: "+((JavaClass) o).getName());
         } else if (o instanceof Instance) {

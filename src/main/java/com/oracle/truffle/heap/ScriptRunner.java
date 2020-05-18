@@ -1,6 +1,5 @@
 package com.oracle.truffle.heap;
 
-import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.HeapFactory;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
@@ -11,7 +10,6 @@ import org.netbeans.modules.profiler.oql.engine.api.impl.truffle.OQLEngineImpl;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Iterator;
 
 public class ScriptRunner {
 
@@ -23,24 +21,13 @@ public class ScriptRunner {
         File scriptFile = new File(args[1]);
         String script = Files.readAllLines(scriptFile.toPath()).stream().reduce("", (s, s2) -> s + "\n" + s2);
         System.out.println("Running on: "+System.getProperty("java.home"));
-        if ("off".equals(System.getProperty("truffle", "on"))) {
+        if ("original".equals(System.getProperty("engine", "truffle"))) {
             System.out.println("Running with original OQL Engine:");
             runWithOriginal(heapFile, script);
         } else {
             System.out.println("Running with Heap Language:");
             runWithHeapLanguage(heapFile, script);
         }
-        /*int count = 0;
-        Heap heap = HeapFactory.createHeap(heapFile);
-        long start = System.currentTimeMillis();
-        //noinspection unchecked
-        Iterator<Instance> it = heap.getAllInstancesIterator();
-        while (it.hasNext()) {
-            if (it.next().getJavaClass().getName().startsWith("java")) {
-                count += 1;
-            }
-        }
-        System.out.println("Count: "+count+" in "+(System.currentTimeMillis() - start)+"ms");*/
     }
 
     private static void runWithHeapLanguage(File heapFile, String script) throws IOException, OQLException {
