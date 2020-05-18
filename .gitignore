@@ -36,3 +36,5 @@ build
 
 *.hwcache
 *.hprof
+
+graal_dumps
