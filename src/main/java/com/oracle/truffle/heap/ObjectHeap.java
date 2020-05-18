@@ -1,5 +1,6 @@
 package com.oracle.truffle.heap;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -116,8 +117,7 @@ final class ObjectHeap implements TruffleObject {
     /* Returns an enumeration of all Java classes. */
     private Object invoke_classes(Object[] arguments) throws ArityException {
         Args.checkArity(arguments, 0);
-        //noinspection unchecked
-        Iterator<JavaClass> it = heap.getAllClasses().iterator();
+        Iterator<JavaClass> it = get_all_classes(heap);
         return Iterators.exportIterator(new Iterator<Object>() {
             @Override
             public boolean hasNext() {
@@ -129,6 +129,12 @@ final class ObjectHeap implements TruffleObject {
                 return ObjectJavaClass.create(it.next());
             }
         });
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    private static Iterator<JavaClass> get_all_classes(Heap heap) {
+        //noinspection unchecked
+        return (Iterator<JavaClass>) heap.getAllClasses().iterator();
     }
 
     /* Returns an enumeration of Java objects. Three arguments: clazz, includeSubtypes and filter.

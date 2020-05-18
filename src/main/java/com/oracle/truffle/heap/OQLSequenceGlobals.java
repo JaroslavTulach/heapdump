@@ -1,12 +1,22 @@
 package com.oracle.truffle.heap;
 
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.*;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.heap.interop.*;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 /**
  * <p>These functions accept an array/iterator/enumeration and an expression string [or a callback function] as input.
@@ -76,20 +86,63 @@ interface OQLSequenceGlobals {
         }
 
         @ExportMessage
-        static Object execute(@SuppressWarnings("unused") Contains receiver, Object[] arguments)
-                throws ArityException, UnsupportedTypeException, UnsupportedMessageException
-        {
-            Args.checkArity(arguments, 2);
-            InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-            Iterator<? extends IndexPair<?, ?>> it = Args.unwrapIndexedIterator(arguments, 0);
-            TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 1, "it", "index", "array");
-            while (it.hasNext()) {
-                IndexPair<?, ?> element = it.next();
-                if (Types.asBoolean(interop.execute(callback, element.getValue(), element.getIndex(), arguments[0]))) {
-                    return Boolean.TRUE;
-                }
+        @ImportStatic(Args.class)
+        static class Execute {
+
+            public static boolean isExecutable(InteropLibrary interop, Object[] arguments) {
+                return interop.isExecutable(arguments[1]);
             }
-            return Boolean.FALSE;
+
+            public static Object callArg(Object[] arguments) {
+                return arguments[1];
+            }
+
+            @Specialization(guards = "isExecutable(call, arguments)", limit = "3")
+            static Object executeWithFunction(Contains receiver, Object[] arguments, @CachedLibrary("callArg(arguments)") InteropLibrary call) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+                Args.checkArity(arguments, 2);
+                Iterator<? extends IndexPair<?, ?>> it = Args.unwrapIndexedIterator(arguments, 0);
+                TruffleObject callback = (TruffleObject) arguments[1];
+                while (it.hasNext()) {
+                    IndexPair<?, ?> element = it.next();
+                    if (Types.asBoolean(call.execute(callback, element.getValue(), element.getIndex(), arguments[0]))) {
+                        return Boolean.TRUE;
+                    }
+                }
+                return Boolean.FALSE;
+            }
+
+            public static String tryAsStringExpression(Object[] arguments) {
+                return Types.tryAsString(arguments[1]);
+            }
+
+            public static TruffleObject compileString(String expression) {
+                System.out.println("Compiling: "+expression);
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                HeapLanguage.State state = HeapLanguage.getContext();
+                Source source = Source.newBuilder("js", "new Function('it', 'return "+expression.replace("'", "\\'")+"')", "expression."+"js").build();
+                TruffleLanguage.Env env = state.getEnvironment();
+                CallTarget callTarget = env.parsePublic(source);
+                return (TruffleObject) callTarget.call();
+            }
+
+            static TruffleObject getUncached() {
+                return null;
+                // TODO...
+            }
+
+            @Specialization(guards = "tryUnwrapString(arguments, 1) != null")
+            static Object executeWithExpression(Contains receiver, Object[] arguments, @Cached("compileString(tryAsStringExpression(arguments))") TruffleObject callback, @CachedLibrary("callback") InteropLibrary call) throws ArityException, UnsupportedTypeException, UnsupportedMessageException {
+                Args.checkArity(arguments, 2);
+                Iterator<? extends IndexPair<?, ?>> it = Args.unwrapIndexedIterator(arguments, 0);
+                while (it.hasNext()) {
+                    IndexPair<?, ?> element = it.next();
+                    if (Types.asBoolean(call.execute(callback, element.getValue(), element.getIndex(), arguments[0]))) {
+                        return Boolean.TRUE;
+                    }
+                }
+                return Boolean.FALSE;
+            }
+
         }
 
     }

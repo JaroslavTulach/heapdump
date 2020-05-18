@@ -1,5 +1,6 @@
 package com.oracle.truffle.heap;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import org.graalvm.polyglot.io.ByteSequence;
 import org.netbeans.lib.profiler.heap.*;
 import org.netbeans.modules.profiler.oql.engine.api.ReferenceChain;
@@ -187,6 +188,7 @@ public abstract class HeapUtils {
         return roots;
     }
 
+    @CompilerDirectives.TruffleBoundary
     public static Iterator<Instance> getReferrers(Object obj, boolean includeWeak) {
         List<Instance> instances  = new ArrayList<>();
         List<Object> references = new ArrayList<>();
@@ -215,6 +217,7 @@ public abstract class HeapUtils {
         return instances.iterator();
     }
 
+    @CompilerDirectives.TruffleBoundary
     public static Iterator<Instance> getReferees(Object obj, boolean includeWeak) {
         List<Instance> instances = new ArrayList<>();
         List<Object> values    = new ArrayList<>();
