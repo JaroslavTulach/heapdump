@@ -78,7 +78,8 @@ final class ObjectHeap implements TruffleObject {
             UnsupportedTypeException
     {
         Args.checkArityBetween(arguments, 1, 3);
-        TruffleObject callback = Args.unwrapExecutable(arguments, 0);
+        //TruffleObject callback = Args.unwrapExecutable(arguments, 0);
+        TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 0, "it");
 
         JavaClass javaClass;
         if (arguments.length == 1) {    // set class to default: Object
