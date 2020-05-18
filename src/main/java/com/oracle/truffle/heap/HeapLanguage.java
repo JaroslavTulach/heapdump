@@ -1,11 +1,11 @@
 package com.oracle.truffle.heap;
 
-import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.Scope;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.*;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.*;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -122,6 +122,7 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
      * @return An executable truffle object representing the parsed function.
      * @throws IllegalStateException Expression arguments are disabled.
      */
+    @CompilerDirectives.TruffleBoundary
     static TruffleObject parseArgumentExpression(@NonNull String expression, String... argNames) {
         State state = TruffleLanguage.getCurrentContext(HeapLanguage.class);
         String scriptLanguage = state.getScriptLanguage();
@@ -263,9 +264,13 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
 
         @Override
         public Object execute(VirtualFrame frame) {
+            return new ObjectHeap(makeHeap(file));
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private static Heap makeHeap(File file) {
             try {
-                Heap heap = HeapFactory.createHeap(file);
-                return new ObjectHeap(heap);
+                return HeapFactory.createHeap(file);
             } catch (IOException e) {
                 throw new RuntimeException("Error while reading heap dump.", e);
             }

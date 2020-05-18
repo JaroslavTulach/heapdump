@@ -1,5 +1,6 @@
 package com.oracle.truffle.heap;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -108,7 +109,7 @@ class ObjectInstance implements TruffleObject {
             case WRAPPED_OBJECT:
                 return HeapLanguage.asGuestValue(this.instance);
             default:
-                Object value = this.instance.getValueOfField(member);
+                Object value = readField(member);
                 if (value == null || value instanceof Instance) {
                     return ObjectInstance.create((Instance) value);
                 } else if (Types.isPrimitiveValue(value)) {
@@ -117,6 +118,11 @@ class ObjectInstance implements TruffleObject {
                     throw new IllegalStateException("unreachable");
                 }
         }
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    private Object readField(String member) {
+        return this.instance.getValueOfField(member);
     }
 
     @ExportLibrary(InteropLibrary.class)
