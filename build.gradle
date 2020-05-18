@@ -14,6 +14,8 @@ repositories {
     jcenter()
 }
 
+// TODO: Make this script nicer (tests, run, etc. should work fast on all VM versions) - we need to avoid shadow jars and overall make classpaths nicer
+
 application {
     mainClassName = 'com.oracle.truffle.heap.ScriptRunner'
     applicationDefaultJvmArgs = ['-Dtruffle.class.path.append=__APP_HOME__/lib/heap-language.jar:__APP_HOME__/lib/org-netbeans-lib-profiler-RELEASE113.jar']
