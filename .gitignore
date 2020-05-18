@@ -35,3 +35,6 @@ build
 .DS_Store
 
 *.hwcache
+*.hprof
+
+graal_dumps
