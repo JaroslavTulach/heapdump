@@ -90,7 +90,7 @@ import java.util.Map;
 public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
 
     /** A singleton null instance used by heap language. */
-    public static final TruffleObject NULL = Interop.Primitives.Null.INSTANCE;
+    public static final TruffleObject NULL = Interop.Null.INSTANCE;
 
     /**
      * <p>Set the script language which should be used when evaluating string expression arguments.
