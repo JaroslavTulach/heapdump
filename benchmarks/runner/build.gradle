@@ -6,16 +6,87 @@ repositories {
     jcenter()
 }
 
+ext.benchHeap = "$projectDir/../dumps/tumor_cell.hprof"
+ext.graalVersion = "20.0.0"
+ext.compilerDir = "$buildDir/compiler"  // stores the runtime compiler jar files
+ext.truffleDir = "$buildDir/truffle"  // stores truffle language jar files
+
+configurations {
+    add(graalCompiler)  // dependencies for graal compiler used on hotspot JDK11
+    add(truffle)        // dependencies for custom truffle languages
+}
+
 dependencies {
     implementation project(":")
     implementation 'org.netbeans.modules:org-netbeans-modules-profiler-oql:RELEASE113'
+
+    // Run fast javascript on JDK11+
+    implementation "org.graalvm.js:js:$graalVersion"
+    // necessary to integrate with legacy ScriptEngine based implementation
+    implementation "org.graalvm.js:js-scriptengine:$graalVersion"
+
+    graalCompiler "org.graalvm.compiler:compiler:$graalVersion"
+    truffle project(":")
 }
 
-task bench01(type: JavaExec) {
-    classpath = sourceSets.main.runtimeClasspath
-    main = 'benchmark.runner.Bench01'
-    args '../dumps/tumor_cell.hprof'
-    jvmArgs = ['-Dbench='+System.getProperty("bench"), '-Dtruffle.class.path.append=../../build/libs/heap-language-all.jar']
+task bench(type: JavaExec) { task ->
+    initBenchmarkTask((JavaExec) task, "")
+    task.main("com.oracle.truffle.heap.ScriptRunner")
+    task.args = [System.getProperty("heap", benchHeap), System.getProperty("script", "$projectDir/script.js")]
 }
 
-bench01.dependsOn ':shadowJar'
+task bench01(type: JavaExec) { task ->
+    initBenchmarkTask((JavaExec) task, 'benchmark.runner.Bench01')
+}
+
+task bench02(type: JavaExec) { task ->
+    initBenchmarkTask((JavaExec) task, 'benchmark.runner.Bench02')
+}
+
+@SuppressWarnings("GrMethodMayBeStatic") // it cannot be static - it uses sourceSets
+void initBenchmarkTask(JavaExec receiver, String mainClass) {
+    receiver.main(mainClass)
+    receiver.args(benchHeap)
+    receiver.classpath = sourceSets.main.runtimeClasspath
+    receiver.jvmArgs = benchmarkJvmArgs()
+}
+
+@SuppressWarnings("GrMethodMayBeStatic") // it cannot be static - it references global variables
+Iterable<String> benchmarkJvmArgs() {
+    List<String> args = new ArrayList<>()
+    // Forward benchmark type to the runner.
+    args.add('-Dbench='+System.getProperty("engine", "truffle"))
+    // Add included custom truffle language files to the class path.
+    args.add("-Dtruffle.class.path.append=$truffleDir/heap-language.jar:$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar")
+    // If IGV is enabled, instruct Graal to dump compilation graphs.
+    if (System.getProperty("igv", "off") == "on") {
+        args.add("-Dgraal.Dump=:1")
+        args.add("-Dgraal.PrintGraph=Network")
+    }
+    // If graal is enabled on hotspot JDK (>=11), we have to add it as a special module.
+    if (System.getProperty("graal", "on") == "on" && JavaVersion.current() >= JavaVersion.VERSION_11) {
+        args.add('-XX:+UnlockExperimentalVMOptions')
+        args.add('-XX:+EnableJVMCI')
+        args.add("--module-path=$compilerDir")
+        args.add("--upgrade-module-path=$compilerDir/compiler-${graalVersion}.jar")
+    }
+    return args
+}
+
+/* Copy Graal runtime compiler .jar files to $compilerDir. */
+task copyGraalCompiler(type: Copy) {
+    into compilerDir
+    from configurations.getByName('graalCompiler').files
+}
+
+/* Copy heap language runtime classes to $heapLanguageDir */
+task copyTruffleLanguages(type: Copy) {
+    into truffleDir
+    from configurations.getByName('truffle').files
+}
+
+/* Make sure dependencies are available when doing anything. */
+// (note that compileJava actually does not need them, but all other tasks that
+// need them depend on compileJava, so this is a reasonable trade-off)
+compileJava.dependsOn(copyGraalCompiler)
+compileJava.dependsOn(copyTruffleLanguages)
