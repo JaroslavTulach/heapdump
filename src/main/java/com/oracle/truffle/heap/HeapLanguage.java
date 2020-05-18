@@ -136,6 +136,10 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         return Interop.wrapCallTarget(env.parsePublic(source, argNames), env);
     }
 
+    static State getContext() {
+        return TruffleLanguage.getCurrentContext(HeapLanguage.class);
+    }
+
     /**
      * <p>Resolve callback/string expression arguments. If the argument is already executable, just return it.
      * If not, try to parse it as executable string expression.</p>

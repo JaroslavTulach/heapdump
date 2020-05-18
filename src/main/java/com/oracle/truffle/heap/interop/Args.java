@@ -34,6 +34,10 @@ public final class Args {
         return value != null ? value : Errors.expectedArgumentType(arguments, "integral number", argIndex);
     }
 
+    public static String tryUnwrapString(Object[] arguments, int argIndex) {
+        return Types.tryAsString(arguments[argIndex]);
+    }
+
     public static String unwrapString(Object[] arguments, int argIndex) throws UnsupportedTypeException {
         String value = Types.tryAsString(arguments[argIndex]);
         return value != null ? value : Errors.expectedArgumentType(arguments, "String", argIndex);
