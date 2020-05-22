@@ -10,6 +10,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.heap.interop.Errors;
 import com.oracle.truffle.heap.interop.Interop;
 import com.oracle.truffle.heap.interop.MemberDescriptor;
 import com.oracle.truffle.heap.interop.Types;
@@ -123,17 +124,18 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
      * @throws IllegalStateException Expression arguments are disabled.
      */
     @CompilerDirectives.TruffleBoundary
-    static TruffleObject parseArgumentExpression(@NonNull String expression, String... argNames) {
+    public static TruffleObject parseArgumentExpression(@NonNull String expression, String... argNames) {
         State state = TruffleLanguage.getCurrentContext(HeapLanguage.class);
         String scriptLanguage = state.getScriptLanguage();
         if (scriptLanguage == null) {
-            throw new IllegalStateException(
-                    String.format("Expression arguments are disabled. Cannot evaluate '%s'.", expression)
-            );
+            return Errors.illegalState(String.format("Expression arguments are disabled. Cannot evaluate '%s'.", expression));
+        }
+        if (scriptLanguage.equals("js")) {
+            expression = "return "+expression;  // TODO: Needs a fix in graal js?
         }
         Source source = Source.newBuilder(scriptLanguage, expression, "expression."+scriptLanguage).build();
         TruffleLanguage.Env env = state.getEnvironment();
-        return Interop.wrapCallTarget(env.parsePublic(source, argNames), env);
+        return Interop.wrapCallTarget(env.parsePublic(source, argNames));
     }
 
     static State getContext() {
@@ -193,6 +195,10 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
         }
     }
 
+    static HeapLanguage getInstance() {
+        return HeapLanguage.getCurrentLanguage(HeapLanguage.class);
+    }
+
     /**
      * <p>Convert given Java object into a truffle guest value.</p>
      */
@@ -203,10 +209,6 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
     public static Object tryAsHostObject(Object value) {
         TruffleLanguage.Env env = HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment();
         return env.isHostObject(value) ? env.asHostObject(value) : null;
-    }
-
-    public static Object getHostSymbol(String name) {
-        return HeapLanguage.getCurrentContext(HeapLanguage.class).getEnvironment().lookupHostSymbol(name);
     }
 
     public static Object asHostInterface(Object object, String interfaceName) {
@@ -235,12 +237,6 @@ public class HeapLanguage extends TruffleLanguage<HeapLanguage.State> {
     @Override
     protected Iterable<Scope> findTopScopes(State context) {    // export globals into our bindings
         return Collections.singletonList(Scope.newBuilder("global", new Globals()).build());
-    }
-
-    @Override
-    protected boolean isObjectOfLanguage(Object object) {
-        // TODO
-        return false;
     }
 
     @Override
