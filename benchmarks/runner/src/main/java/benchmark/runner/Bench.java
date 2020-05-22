@@ -28,25 +28,31 @@ public abstract class Bench {
                 start = System.currentTimeMillis();
                 heap = HeapFactory.createHeap(heapFile);
                 System.out.println("Heap dump loaded in "+(System.currentTimeMillis() - start));
-                start = System.currentTimeMillis();
-                computeNative(heap);
-                System.out.println("Native implementation finished in "+(System.currentTimeMillis() - start)+"ms.");
+                for (int i=0; i<10; i++) {
+                    start = System.currentTimeMillis();
+                    computeNative(heap);
+                    System.out.println("Native implementation finished in "+(System.currentTimeMillis() - start)+"ms.");
+                }
                 return;
             case "original":
                 start = System.currentTimeMillis();
                 OQLEngine engine = new OQLEngine(HeapFactory.createHeap(heapFile));
                 System.out.println("Heap dump loaded in "+(System.currentTimeMillis() - start));
-                start = System.currentTimeMillis();
-                engine.executeQuery(script, VISITOR);
-                System.out.println("Query finished in "+(System.currentTimeMillis() - start)+"ms.");
+                for (int i=0; i<10; i++) {
+                    start = System.currentTimeMillis();
+                    engine.executeQuery(script, VISITOR);
+                    System.out.println("Query finished in " + (System.currentTimeMillis() - start) + "ms.");
+                }
                 return;
             case "truffle":
                 start = System.currentTimeMillis();
                 OQLEngineImpl truffle = new OQLEngineImpl(heapFile);
                 System.out.println("Heap dump loaded in "+(System.currentTimeMillis() - start));
-                start = System.currentTimeMillis();
-                truffle.executeQuery(script, VISITOR);
-                System.out.println("Query finished in "+(System.currentTimeMillis() - start)+"ms.");
+                for (int i=0; i<10; i++) {
+                    start = System.currentTimeMillis();
+                    truffle.executeQuery(script, VISITOR);
+                    System.out.println("Query finished in "+(System.currentTimeMillis() - start)+"ms.");
+                }
                 return;
             default:
                 throw new IllegalStateException("Unknown benchmark type "+System.getProperty("bench"));
