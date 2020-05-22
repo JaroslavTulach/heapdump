@@ -17,7 +17,8 @@ public interface Errors {
     /**
      * Rethrow the given exception, possibly as runtime exception.
      */
-    static <E extends Exception, R> R rethrow(Class<E> type, Exception ex) throws E {
+    static <E extends Exception, R> R rethrow(@SuppressWarnings("unused") Class<E> type, Exception ex) throws E {
+        CompilerDirectives.transferToInterpreter();
         //noinspection unchecked - this is intentional
         throw (E) ex;
     }

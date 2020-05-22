@@ -12,6 +12,10 @@ import java.util.List;
 public final class Args {
     private Args() {}
 
+    public static boolean isMissing(Object[] arguments, int index) {
+        return index >= arguments.length || arguments[index] == null;
+    }
+
     public static <T extends TruffleObject> T unwrapInstance(Object[] arguments, int argIndex, Class<T> clazz) throws UnsupportedTypeException {
         Object argument = arguments[argIndex];
         if (clazz.isInstance(argument)) {
