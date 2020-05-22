@@ -7,14 +7,6 @@ repositories {
 }
 
 ext.benchHeap = "$projectDir/../dumps/tumor_cell.hprof"
-ext.graalVersion = "20.0.0"
-ext.compilerDir = "$buildDir/compiler"  // stores the runtime compiler jar files
-ext.truffleDir = "$buildDir/truffle"  // stores truffle language jar files
-
-configurations {
-    add(graalCompiler)  // dependencies for graal compiler used on hotspot JDK11
-    add(truffle)        // dependencies for custom truffle languages
-}
 
 dependencies {
     implementation project(":")

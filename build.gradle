@@ -1,29 +1,76 @@
 import java.util.stream.Collectors
 
+buildscript {
+    allprojects {   // Set graal version and some global properties in all projects
+        ext.graalVersion = "20.1.0"
+        ext.compilerDir = "$buildDir/compiler"  // stores the runtime compiler jar files
+        ext.truffleDir = "$buildDir/truffle"  // stores truffle language jar files
+
+        configurations {
+            add(graalCompiler)  // dependencies for graal compiler used on hotspot JDK11
+            add(truffle)        // dependencies for custom truffle languages
+        }
+    }
+}
+
 plugins {
     id 'application'
     id 'java-library'
+    id 'jacoco'
     id "com.github.johnrengelman.shadow" version "5.2.0"    // build a jar of heap language with all dependencies
-}
-
-if (System.getProperty("java.vm.name").contains("HotSpot")) {
-    apply plugin: 'jacoco'  // Only measure code coverage on HotSpot JVMs, since jacoco is broken on Graal
 }
 
 repositories {
     jcenter()
 }
 
-// TODO: Make this script nicer (tests, run, etc. should work fast on all VM versions) - we need to avoid shadow jars and overall make classpaths nicer
+dependencies {
+    // JS support in non-Graal VMs
+    implementation "org.graalvm.js:js:$graalVersion"
+    implementation "org.graalvm.js:js-scriptengine:$graalVersion"
+    // Truffle language API
+    implementation "org.graalvm.truffle:truffle-api:$graalVersion"
+    // Annotation processor to generate language implementation
+    implementation "org.graalvm.truffle:truffle-dsl-processor:$graalVersion"
+    annotationProcessor "org.graalvm.truffle:truffle-dsl-processor:$graalVersion"
+    // Heap analysis library from Netbeans
+    implementation 'org.netbeans.modules:org-netbeans-modules-profiler-oql:RELEASE113'
+    truffle 'org.netbeans.modules:org-netbeans-modules-profiler-oql:RELEASE113'
+
+    graalCompiler "org.graalvm.compiler:compiler:$graalVersion"
+
+    testImplementation 'junit:junit:4.12'
+}
+
+run {
+    // Add heap language to truffle classpath
+    jvmArgs = [ "-Dtruffle.class.path.append=$truffleDir/heap-language.jar:$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar" ]
+    if (System.getProperty("graal", "on") == "on" && JavaVersion.current() >= JavaVersion.VERSION_11) { // Enable graal compiler on hotspot
+        jvmArgs = jvmArgs + ['-XX:+UnlockExperimentalVMOptions', '-XX:+EnableJVMCI',
+                "--module-path=$compilerDir", "--upgrade-module-path=$compilerDir/compiler-${graalVersion}.jar"]
+    }
+    systemProperty "engine", System.getProperty("engine")   // pass engine property to script runner
+}
 
 application {
     mainClassName = 'com.oracle.truffle.heap.ScriptRunner'
-    applicationDefaultJvmArgs = ['-Dtruffle.class.path.append=__APP_HOME__/lib/heap-language.jar:__APP_HOME__/lib/org-netbeans-lib-profiler-RELEASE113.jar']
+    applicationDefaultJvmArgs = [
+            // Import heap language into graal
+            '-Dtruffle.class.path.append=__APP_HOME__/lib/heap-language.jar:__APP_HOME__/lib/org-netbeans-lib-profiler-RELEASE113.jar',
+    ]
 }
 
-static void replaceInFile(File f, String find, String replace) {
-    f.write(f.readLines().stream().map {l -> l.replace(find, replace) }.collect(Collectors.joining("\n")))
-};
+test {
+    jvmArgs = [
+                "-Dtruffle.class.path.append=$truffleDir/heap-language.jar:$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar",
+                "-Djfr.unsupported.vm=true" // Workaround to enable JaCoCo on Graal (https://bugs.openjdk.java.net/browse/JDK-8245283)
+    ]
+    testLogging {   // Show more logs during testing
+        events "passed", "skipped", "failed", "standardError" //, "standardOut"
+    }
+}
+
+// TODO: All of this should be a gradle plugin!
 
 startScripts {
     doLast {
@@ -33,35 +80,25 @@ startScripts {
     }
 }
 
-dependencies {
-    // JS support in non-Graal VMs
-    implementation 'org.graalvm.js:js:20.0.0'
-    // Truffle language API
-    implementation 'org.graalvm.truffle:truffle-api:20.0.0'
-    // Annotation processor to generate language implementation
-    implementation 'org.graalvm.truffle:truffle-dsl-processor:20.0.0'
-    annotationProcessor 'org.graalvm.truffle:truffle-dsl-processor:20.0.0'
-    // Heap analysis library from Netbeans
-    implementation 'org.netbeans.modules:org-netbeans-modules-profiler-oql:RELEASE113'
-
-    testImplementation 'junit:junit:4.12'
+/* A simple find-replace in a file (used to set-up jvm args in run scripts) */
+static void replaceInFile(File f, String find, String replace) {
+    f.write(f.readLines().stream().map {l -> l.replace(find, replace) }.collect(Collectors.joining("\n")))
 }
 
-// To test the language, we need to have a fat jar available
-test.dependsOn shadowJar
-
-test {
-    // Tell Graal to add heap language into our language classpath.
-    jvmArgs "-Dtruffle.class.path.append=build/libs/heap-language-all.jar"//, "-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI", "-Dgraal.Dump=:1", "-Dgraal.PrintGraph=Network"
+/* Copy Graal runtime compiler .jar files to $compilerDir. */
+task copyGraalCompiler(type: Copy) {
+    into compilerDir
+    from configurations.getByName('graalCompiler').files
 }
 
-test {
-    testLogging {
-        events "passed", "skipped", "failed", "standardError" //, "standardOut"
-    }
+/* Copy heap language runtime classes to $heapLanguageDir */
+task copyTruffleLanguages(type: Copy) {
+    into truffleDir
+    from configurations.getByName('truffle').files, libsDirectory.get() // also copy this project
 }
 
-run {
-    /* Pass system property to executing jvm */
-    systemProperty "truffle", System.getProperty("truffle")
-}
+/* Make sure dependencies are available when doing anything. */
+// (note that compileJava actually does not need them, but all other tasks that
+// need them depend on compileJava, so this is a reasonable trade-off)
+compileJava.dependsOn(copyGraalCompiler)
+compileJava.dependsOn(copyTruffleLanguages)
