@@ -44,7 +44,7 @@ dependencies {
 
 run {
     // Add heap language to truffle classpath
-    jvmArgs = [ "-Dtruffle.class.path.append=$truffleDir/heap-language.jar:$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar" ]
+    jvmArgs = [ "-Dtruffle.class.path.append=$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar:$buildDir/classes/java/main" ]
     if (System.getProperty("graal", "on") == "on" && JavaVersion.current() >= JavaVersion.VERSION_11) { // Enable graal compiler on hotspot
         jvmArgs = jvmArgs + ['-XX:+UnlockExperimentalVMOptions', '-XX:+EnableJVMCI',
                 "--module-path=$compilerDir", "--upgrade-module-path=$compilerDir/compiler-${graalVersion}.jar"]
@@ -56,18 +56,16 @@ application {
     mainClassName = 'com.oracle.truffle.heap.ScriptRunner'
     applicationDefaultJvmArgs = [
             // Import heap language into graal
-            '-Dtruffle.class.path.append=__APP_HOME__/lib/heap-language.jar:__APP_HOME__/lib/org-netbeans-lib-profiler-RELEASE113.jar',
+            '-Dtruffle.class.path.append=__APP_HOME__/lib/heap-language.jar:__APP_HOME__/lib/org-netbeans-lib-profiler-RELEASE113.jar:__APP_HOME__/lib/org-netbeans-modules-profiler-oql-RELEASE113.jar',
     ]
 }
 
 test {
-    jvmArgs = [
-                "-Dtruffle.class.path.append=$truffleDir/heap-language.jar:$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar",
-                "-Djfr.unsupported.vm=true" // Workaround to enable JaCoCo on Graal (https://bugs.openjdk.java.net/browse/JDK-8245283)
-    ]
     testLogging {   // Show more logs during testing
         events "passed", "skipped", "failed", "standardError" //, "standardOut"
     }
+    jvmArgs "-Dtruffle.class.path.append=$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar:$truffleDir/org-netbeans-modules-profiler-oql-RELEASE113.jar:$buildDir/classes/java/main",
+            "-Djfr.unsupported.vm=true" // Workaround to enable JaCoCo on Graal (https://bugs.openjdk.java.net/browse/JDK-8245283)
 }
 
 // TODO: All of this should be a gradle plugin!

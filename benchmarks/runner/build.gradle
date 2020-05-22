@@ -61,7 +61,7 @@ Iterable<String> benchmarkJvmArgs() {
     // Forward benchmark type to the runner.
     args.add('-Dengine='+System.getProperty("engine", "truffle"))
     // Add included custom truffle language files to the class path.
-    args.add("-Dtruffle.class.path.append=$truffleDir/heap-language.jar:$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar")
+    args.add("-Dtruffle.class.path.append=$truffleDir/heap-language.jar:$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar:$truffleDir/org-netbeans-modules-profiler-oql-RELEASE113.jar")
     // If IGV is enabled, instruct Graal to dump compilation graphs.
     if (System.getProperty("igv", "off") == "on") {
         args.add("-Dgraal.Dump=:1")
