@@ -1,10 +1,23 @@
 package com.oracle.truffle.heap;
 
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleRuntime;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameSlotKind;
+import com.oracle.truffle.api.frame.FrameSlotTypeException;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.*;
 import com.oracle.truffle.heap.interop.*;
+import com.oracle.truffle.heap.interop.nodes.ArgBooleanOptional;
+import com.oracle.truffle.heap.interop.nodes.ArgCallback;
+import com.oracle.truffle.heap.interop.nodes.ArgJavaClassOptional;
+import com.oracle.truffle.heap.interop.nodes.UnwrapBoolean;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.Instance;
@@ -20,20 +33,6 @@ import java.util.NoSuchElementException;
  */
 @ExportLibrary(InteropLibrary.class)
 final class ObjectHeap implements TruffleObject {
-
-    private static final String FOR_EACH_CLASS = "forEachClass";
-    private static final String FOR_EACH_OBJECT = "forEachObject";
-    private static final String FIND_CLASS = "findClass";
-    private static final String FIND_OBJECT = "findObject";
-    private static final String CLASSES = "classes";
-    private static final String OBJECTS = "objects";
-    private static final String FINALIZABLES = "finalizables";
-    private static final String LIVEPATHS = "livepaths";
-    private static final String ROOTS = "roots";
-
-    private static final MemberDescriptor MEMBERS = MemberDescriptor.functions(
-        FOR_EACH_CLASS, FOR_EACH_OBJECT, FIND_CLASS, FIND_OBJECT, CLASSES, OBJECTS, FINALIZABLES, LIVEPATHS, ROOTS
-    );
 
     @NonNull
     private final Heap heap;
@@ -63,41 +62,6 @@ final class ObjectHeap implements TruffleObject {
         for (JavaClass javaClass : (Iterable<JavaClass>) this.heap.getAllClasses()) {
             Boolean stop = Types.tryAsBoolean(interop.execute(callback, ObjectJavaClass.create(javaClass)));
             if (stop != null && stop) break;
-        }
-        return this;
-    }
-
-    /* Calls a callback function for each Java object. Three arguments: callback, clazz and includeSubtypes.
-     *  - clazz is the class whose instances are selected. If not specified, defaults to java.lang.Object.
-     *  - includeSubtypes is a boolean flag that specifies whether to include subtype instances or not.
-     *  Default value of this flag is true.
-     */
-    private Object invoke_forEachObject(Object[] arguments)
-            throws ArityException,
-            UnsupportedMessageException,
-            UnsupportedTypeException
-    {
-        Args.checkArityBetween(arguments, 1, 3);
-        //TruffleObject callback = Args.unwrapExecutable(arguments, 0);
-        TruffleObject callback = HeapLanguage.unwrapCallbackArgument(arguments, 0, "it");
-
-        JavaClass javaClass;
-        if (arguments.length == 1) {    // set class to default: Object
-            javaClass = HeapUtils.findClass(heap, "java.lang.Object");
-        } else {
-            javaClass = HeapLanguage.unwrapJavaClassArgument(arguments, 1, this.heap);
-        }
-
-        boolean includeSubtypes = true;
-        if (arguments.length == 3) {
-            includeSubtypes = Args.unwrapBoolean(arguments, 2);
-        }
-
-        InteropLibrary interop = InteropLibrary.getFactory().getUncached();
-        Iterator<Instance> items = HeapUtils.getInstances (heap, javaClass, includeSubtypes);
-        while (items.hasNext()) {
-            Instance instance = items.next();
-            interop.execute(callback, ObjectInstance.create(instance));
         }
         return this;
     }
@@ -266,7 +230,7 @@ final class ObjectHeap implements TruffleObject {
 
     @ExportMessage
     static boolean isMemberInvocable(@SuppressWarnings("unused") ObjectHeap receiver, String member) {
-        return MEMBERS.hasFunction(member);
+        return InvokeMember.MEMBERS.hasFunction(member);
     }
 
     @ExportMessage
@@ -274,39 +238,163 @@ final class ObjectHeap implements TruffleObject {
             @SuppressWarnings("unused") ObjectHeap receiver,
             @SuppressWarnings("unused") boolean includeInternal
     ) {
-        return MEMBERS;
+        return InvokeMember.MEMBERS;
+    }
+
+    /* Calls a callback function for each Java object. Three arguments: callback, clazz and includeSubtypes.
+     *  - Callback can be either an executable object or string expression. If it returns `true`, iteration is stopped.
+     *  - Clazz is the class whose instances are selected. If not specified, defaults to java.lang.Object.
+     *  - IncludeSubtypes is a boolean flag that specifies whether to include subtype instances or not.
+     *  Default value of this flag is true.
+     */
+    // Alias: Callback = TruffleObject[Executable: (Instance) -> boolean?]]
+    // Arguments: [Callback, Heap, JavaClass?, Boolean]
+    static final class ForEachObject extends RootNode {
+
+        @Child @SuppressWarnings("FieldMayBeFinal")
+        private LoopNode loop;
+
+        private final FrameSlot iteratorSlot;
+
+        protected ForEachObject() {
+            super(HeapLanguage.getInstance());
+            iteratorSlot = getFrameDescriptor().addFrameSlot("iterator", null, FrameSlotKind.Object);
+            loop = Truffle.getRuntime().createLoopNode(new Loop(iteratorSlot));
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object[] args = frame.getArguments();
+            assert args.length == 4;
+            assert args[1] instanceof Heap;
+            assert args[2] == null || args[2] instanceof JavaClass;
+            assert args[3] instanceof Boolean;
+            Iterator<Instance> iterator = HeapUtils.getInstances((Heap) args[1], (JavaClass) args[2], (boolean) args[3]);   // Truffle Boundary!
+            frame.setObject(iteratorSlot, iterator);
+            return loop.execute(frame);
+        }
+
+        // Arguments: [TruffleObject[Executable]]
+        private static final class Loop extends Node implements RepeatingNode {
+
+            @Child @SuppressWarnings("FieldMayBeFinal")
+            private InteropLibrary interop = InteropLibrary.getFactory().createDispatched(3);
+
+            @Child @SuppressWarnings("FieldMayBeFinal")
+            private UnwrapBoolean bool = UnwrapBoolean.create();
+
+            private final FrameSlot iteratorSlot;
+
+            public Loop(FrameSlot iteratorSlot) {
+                this.iteratorSlot = iteratorSlot;
+            }
+
+            @Override
+            public boolean executeRepeating(VirtualFrame frame) {
+                try {
+                    Object callback = frame.getArguments()[0];
+                    assert callback instanceof TruffleObject;
+                    //noinspection unchecked
+                    Instance item = next((Iterator<Instance>) frame.getObject(iteratorSlot));   // Truffle Boundary!
+                    Boolean finish = item == null ? null : bool.execute(interop.execute(callback, ObjectInstance.create(item)));
+                    return item != null && (finish == null || !finish); // End loop if there was no item or callback returned `true`.
+                } catch (FrameSlotTypeException | UnsupportedTypeException | UnsupportedMessageException | ArityException e) {
+                    return Errors.rethrow(RuntimeException.class, e);
+                }
+            }
+
+            @CompilerDirectives.TruffleBoundary
+            static Instance next(Iterator<Instance> iterator) {
+                return iterator.hasNext() ? iterator.next() : null;
+            }
+
+        }
+
     }
 
     @ExportMessage
-    static Object invokeMember(
-            ObjectHeap receiver, String member, Object[] arguments
-    ) throws ArityException,
-            UnsupportedTypeException,
-            UnknownIdentifierException,
-            UnsupportedMessageException
-    {
-        switch (member) {
-            case FOR_EACH_CLASS:
-                return receiver.invoke_forEachClass(arguments);
-            case FOR_EACH_OBJECT:
-                return receiver.invoke_forEachObject(arguments);
-            case FIND_CLASS:
-                return receiver.invoke_findClass(arguments);
-            case FIND_OBJECT:
-                return receiver.invoke_findObject(arguments);
-            case CLASSES:
-                return receiver.invoke_classes(arguments);
-            case OBJECTS:
-                return receiver.invoke_objects(arguments);
-            case FINALIZABLES:
-                return receiver.invoke_finalizables(arguments);
-            case LIVEPATHS:
-                return receiver.invoke_livepaths(arguments);
-            case ROOTS:
-                return receiver.invoke_roots(arguments);
-            default:
-                throw UnknownIdentifierException.create(member);
+    static class InvokeMember {
+
+        // member constants are defined here so that we can use them in specializations
+        public static final String FOR_EACH_CLASS = "forEachClass";
+        public static final String FOR_EACH_OBJECT = "forEachObject";
+        public static final String FIND_CLASS = "findClass";
+        public static final String FIND_OBJECT = "findObject";
+        public static final String CLASSES = "classes";
+        public static final String OBJECTS = "objects";
+        public static final String FINALIZABLES = "finalizables";
+        public static final String LIVEPATHS = "livepaths";
+        public static final String ROOTS = "roots";
+
+        private static final MemberDescriptor MEMBERS = MemberDescriptor.functions(
+                FOR_EACH_CLASS, FOR_EACH_OBJECT, FIND_CLASS, FIND_OBJECT, CLASSES, OBJECTS, FINALIZABLES, LIVEPATHS, ROOTS
+        );
+
+        static DirectCallNode makeForEach() {
+            TruffleRuntime runtime = Truffle.getRuntime();
+            return runtime.createDirectCallNode(runtime.createCallTarget(new ForEachObject()));
         }
+
+        @Specialization(guards = "FOR_EACH_CLASS.equals(member)")
+        static Object doForEachClass(ObjectHeap receiver, @SuppressWarnings("unused") String member, Object[] arguments) throws UnsupportedMessageException, ArityException, UnsupportedTypeException {
+            return receiver.invoke_forEachClass(arguments);
+        }
+
+        @Specialization(guards = "FOR_EACH_OBJECT.equals(member)")
+        static Object doForEachObject(ObjectHeap receiver, @SuppressWarnings("unused") String member, Object[] arguments,
+                                      @Cached(value = "makeForEach()", allowUncached = true) DirectCallNode node,
+                                      @Cached ArgCallback callbackArg,
+                                      @Cached ArgJavaClassOptional classArg,
+                                      @Cached ArgBooleanOptional subclassArg
+        ) throws UnsupportedTypeException, ArityException {
+            Args.checkArityBetween(arguments, 1, 3);
+            TruffleObject callback = callbackArg.execute(arguments, 0, new String[]{ "it" });
+            JavaClass clazz = classArg.execute(arguments, 1, receiver.heap);
+            Boolean includeSubclasses = subclassArg.execute(arguments, 2, true);
+            node.call(callback, receiver.heap, clazz, includeSubclasses);
+            return receiver;
+        }
+
+        @Specialization(guards = "FIND_CLASS.equals(member)")
+        static Object doFindClass(ObjectHeap receiver, @SuppressWarnings("unused") String member, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            return receiver.invoke_findClass(arguments);
+        }
+
+        @Specialization(guards = "FIND_OBJECT.equals(member)")
+        static Object doFindObject(ObjectHeap receiver, @SuppressWarnings("unused") String member, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            return receiver.invoke_findObject(arguments);
+        }
+
+        @Specialization(guards = "CLASSES.equals(member)")
+        static Object doClasses(ObjectHeap receiver, @SuppressWarnings("unused") String member, Object[] arguments) throws ArityException {
+            return receiver.invoke_classes(arguments);
+        }
+
+        @Specialization(guards = "OBJECTS.equals(member)")
+        static Object doObjects(ObjectHeap receiver, @SuppressWarnings("unused") String member, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            return receiver.invoke_objects(arguments);
+        }
+
+        @Specialization(guards = "FINALIZABLES.equals(member)")
+        static Object doFinalizables(ObjectHeap receiver, @SuppressWarnings("unused") String member, Object[] arguments) throws ArityException {
+            return receiver.invoke_finalizables(arguments);
+        }
+
+        @Specialization(guards = "LIVEPATHS.equals(member)")
+        static Object doLivepaths(ObjectHeap receiver, @SuppressWarnings("unused") String member, Object[] arguments) throws ArityException, UnsupportedTypeException {
+            return receiver.invoke_livepaths(arguments);
+        }
+
+        @Specialization(guards = "ROOTS.equals(member)")
+        static Object doRoots(ObjectHeap receiver, @SuppressWarnings("unused") String member, Object[] arguments) throws ArityException {
+            return receiver.invoke_roots(arguments);
+        }
+
+        @Specialization @SuppressWarnings("unused")
+        public static Object doUnknown(ObjectHeap receiver, String member, Object[] arguments) throws UnknownIdentifierException {
+            throw UnknownIdentifierException.create(member);
+        }
+
     }
 
 }
