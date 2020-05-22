@@ -43,24 +43,30 @@ class ObjectInstance implements TruffleObject {
     static final String WRAPPED_OBJECT = "wrapped-object";
     static final String TO_STRING = "toString";
 
-    protected final MemberDescriptor members;
+    private MemberDescriptor members;   // TODO: Rewrite using cached?
     protected final Instance instance;
 
     protected ObjectInstance(@NonNull Instance instance) {
         this.instance = instance;
-        //noinspection unchecked
-        List<FieldValue> fieldValues = (List<FieldValue>) instance.getFieldValues();
-        // Add extra members to the class fields
-        String[] members = new String[fieldValues.size() + 4];
-        members[0] = "clazz";
-        members[1] = "statics";
-        members[2] = "id";
-        members[3] = "wrapped-object";
-        for (int i = 0; i < fieldValues.size(); i++) {
-            FieldValue value = fieldValues.get(i);
-            members[i + 4] = value.getField().getName();
+    }
+
+    protected MemberDescriptor getMemberDescriptor() {
+        if (this.members == null) {
+            //noinspection unchecked
+            List<FieldValue> fieldValues = (List<FieldValue>) instance.getFieldValues();
+            // Add extra members to the class fields
+            String[] members = new String[fieldValues.size() + 4];
+            members[0] = "clazz";
+            members[1] = "statics";
+            members[2] = "id";
+            members[3] = "wrapped-object";
+            for (int i = 0; i < fieldValues.size(); i++) {
+                FieldValue value = fieldValues.get(i);
+                members[i + 4] = value.getField().getName();
+            }
+            this.members = MemberDescriptor.build(members, new String[]{ TO_STRING });
         }
-        this.members = MemberDescriptor.build(members, new String[]{ TO_STRING });
+        return this.members;
     }
 
     public Instance getInstance() {
@@ -74,17 +80,17 @@ class ObjectInstance implements TruffleObject {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return this.members;
+        return getMemberDescriptor();
     }
 
     @ExportMessage
     boolean isMemberReadable(String member) {
-        return this.members.hasProperty(member);
+        return getMemberDescriptor().hasProperty(member);
     }
 
     @ExportMessage
     boolean isMemberInvocable(String member) {
-        return this.members.hasFunction(member);
+        return member.equals(TO_STRING);
     }
 
     @ExportMessage
@@ -128,15 +134,18 @@ class ObjectInstance implements TruffleObject {
     @ExportLibrary(InteropLibrary.class)
     static final class ObjectArray extends ObjectInstance {
 
-        private final List<Instance> items;
+        @NullAllowed
+        private List<Instance> items;
 
         private ObjectArray(@NonNull ObjectArrayInstance instance) {
             super(instance);
-            //noinspection unchecked
-            this.items = (List<Instance>) instance.getValues();
         }
 
         public List<Instance> getItems() {
+            if (items == null) {
+                //noinspection unchecked
+                this.items = (List<Instance>) ((ObjectArrayInstance) instance).getValues();
+            }
             return items;
         }
 
@@ -147,12 +156,12 @@ class ObjectInstance implements TruffleObject {
 
         @ExportMessage
         public long getArraySize() {
-            return this.items.size();
+            return getItems().size();
         }
 
         @ExportMessage
         public boolean isArrayElementReadable(long index) {
-            return 0 <= index && index < this.items.size();
+            return 0 <= index && index < getItems().size();
         }
 
         @ExportMessage
@@ -160,7 +169,7 @@ class ObjectInstance implements TruffleObject {
             if (!isArrayElementReadable(index)) {
                 throw InvalidArrayIndexException.create(index);
             }
-            return ObjectInstance.create(this.items.get((int) index));
+            return ObjectInstance.create(getItems().get((int) index));
         }
 
     }
@@ -168,12 +177,19 @@ class ObjectInstance implements TruffleObject {
     @ExportLibrary(InteropLibrary.class)
     static final class PrimitiveArray extends ObjectInstance {
 
-        private final List<String> items;
+        @NullAllowed
+        private List<String> items;
 
         private PrimitiveArray(@NonNull PrimitiveArrayInstance instance) {
             super(instance);
-            //noinspection unchecked
-            this.items = (List<String>) instance.getValues();
+        }
+
+        public List<String> getItems() {
+            if (items == null) {
+                //noinspection unchecked
+                this.items = (List<String>) ((PrimitiveArrayInstance) instance).getValues();
+            }
+            return items;
         }
 
         @ExportMessage
@@ -183,12 +199,12 @@ class ObjectInstance implements TruffleObject {
 
         @ExportMessage
         public long getArraySize() {
-            return items.size();
+            return getItems().size();
         }
 
         @ExportMessage
         public boolean isArrayElementReadable(long index) {
-            return 0 <= index && index <= items.size();
+            return 0 <= index && index <= getItems().size();
         }
 
         @ExportMessage
@@ -196,7 +212,7 @@ class ObjectInstance implements TruffleObject {
             if (!isArrayElementReadable(index)) {
                 throw InvalidArrayIndexException.create(index);
             }
-            return this.items.get((int) index);
+            return this.getItems().get((int) index);
         }
 
     }

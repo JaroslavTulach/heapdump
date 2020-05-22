@@ -1,5 +1,6 @@
 package com.oracle.truffle.heap;
 
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -308,7 +309,7 @@ interface OQLGlobalSymbols {
                 return false;
             } else if (from instanceof ObjectInstance) {
                 ObjectInstance instance = (ObjectInstance) from;
-                for (String member : instance.members.getProperties()) {
+                for (String member : instance.getMemberDescriptor().getProperties()) {
                     if (instance.isMemberReadable(member)) {
                         Object item = instance.readMember(member);
                         if (Identical.identical(item, arguments[1])) {
