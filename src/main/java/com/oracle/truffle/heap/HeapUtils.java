@@ -84,9 +84,11 @@ public abstract class HeapUtils {
         return finalizables.iterator();
     }
 
+    // TODO: Consider specializing on includeSubclasses and null clazz
+    @CompilerDirectives.TruffleBoundary
     public static Iterator<Instance> getInstances(Heap heap, final JavaClass clazz, final boolean includeSubclasses) {
         // special case for all subclasses of java.lang.Object
-        if (includeSubclasses && clazz.getSuperClass() == null) {
+        if (clazz == null || (includeSubclasses && clazz.getSuperClass() == null)) {
             //noinspection unchecked
             return (Iterator<Instance>) heap.getAllInstancesIterator();
         }
@@ -94,16 +96,19 @@ public abstract class HeapUtils {
 
             @Override
             protected Iterator<Instance> getSameLevelIterator(JavaClass popped) {
+                //noinspection unchecked
                 return popped.getInstances().iterator();
             }
 
             @Override
             protected Iterator<JavaClass> getTraversingIterator(JavaClass popped) {
-                return includeSubclasses ? popped.getSubClasses().iterator() : Collections.<JavaClass>emptyList().iterator();
+                //noinspection unchecked
+                return includeSubclasses ? popped.getSubClasses().iterator() : Collections.emptyIterator();
             }
         };
     }
 
+    @CompilerDirectives.TruffleBoundary
     public static JavaClass findClass(Heap heap, String name) {
         try {
             long classId;
