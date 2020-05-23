@@ -20,6 +20,10 @@ plugins {
     id "com.github.johnrengelman.shadow" version "5.2.0"    // build a jar of heap language with all dependencies
 }
 
+java {
+    sourceCompatibility JavaVersion.VERSION_1_8
+}
+
 repositories {
     jcenter()
 }
