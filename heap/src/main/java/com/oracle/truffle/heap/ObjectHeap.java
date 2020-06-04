@@ -19,7 +19,6 @@ import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
-import org.netbeans.modules.profiler.oql.engine.api.ReferenceChain;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

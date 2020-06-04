@@ -10,7 +10,6 @@ import com.oracle.truffle.heap.interop.Iterators;
 import org.netbeans.lib.profiler.heap.FieldValue;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
-import org.netbeans.modules.profiler.oql.engine.api.impl.ReachableObjects;
 
 import java.util.ArrayList;
 import java.util.Iterator;

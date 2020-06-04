@@ -3,8 +3,6 @@ package com.oracle.truffle.heap;
 import com.oracle.truffle.api.CompilerDirectives;
 import org.graalvm.polyglot.io.ByteSequence;
 import org.netbeans.lib.profiler.heap.*;
-import org.netbeans.modules.profiler.oql.engine.api.ReferenceChain;
-import org.netbeans.modules.profiler.oql.engine.api.impl.TreeIterator;
 
 import java.io.File;
 import java.io.IOException;

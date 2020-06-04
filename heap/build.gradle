@@ -6,8 +6,8 @@ plugins {
 
 dependencies {
     implementation "org.graalvm.truffle:truffle-api:$graalVersion"
-    // TODO: This brings a ton of useless dependencies - only depend on lib-profiler and api-annotations
-    implementation "org.netbeans.modules:org-netbeans-modules-profiler-oql:$libProfilerVersion"
+    implementation "org.netbeans.api:org-netbeans-api-annotations-common:$libProfilerVersion"
+    implementation "org.netbeans.modules:org-netbeans-lib-profiler:$libProfilerVersion"
 
     annotationProcessor "org.graalvm.truffle:truffle-dsl-processor:$graalVersion"
 
