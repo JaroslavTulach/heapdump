@@ -35,7 +35,7 @@ shadowJar {
 ext.benchHeap = "$projectDir/../dumps/tumor_cell.hprof"
 
 dependencies {
-    implementation project(":")
+    implementation project(":oql-engine")
     implementation 'org.netbeans.modules:org-netbeans-modules-profiler-oql:RELEASE113'
 
     truffleLanguage project(":heap")

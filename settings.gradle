@@ -13,3 +13,4 @@ include 'benchmarks:dump-generator'
 include 'benchmarks:runner'
 
 include 'heap'
+include 'oql-engine'

@@ -1,0 +1,17 @@
+plugins {
+    id 'java-library'
+    id 'jacoco'
+    id 'truffle'
+}
+
+dependencies {
+    truffleLanguage project(":heap")
+    truffleLanguage "org.graalvm.js:js:$graalVersion"
+    truffleLanguage "org.graalvm.js:js-scriptengine:$graalVersion"
+
+    // Heap analysis library from Netbeans
+    implementation "org.graalvm.sdk:graal-sdk:$graalVersion"
+    implementation "org.netbeans.modules:org-netbeans-modules-profiler-oql:$libProfilerVersion"
+
+    testImplementation 'junit:junit:4.12'
+}
