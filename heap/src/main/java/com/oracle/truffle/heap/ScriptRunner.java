@@ -1,19 +1,8 @@
 package com.oracle.truffle.heap;
 
-import org.netbeans.lib.profiler.heap.HeapFactory;
-import org.netbeans.lib.profiler.heap.Instance;
-import org.netbeans.lib.profiler.heap.JavaClass;
-import org.netbeans.modules.profiler.oql.engine.api.OQLEngine;
-import org.netbeans.modules.profiler.oql.engine.api.OQLException;
-import org.netbeans.modules.profiler.oql.engine.api.impl.truffle.OQLEngineImpl;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-
 public class ScriptRunner {
 
-    public static void main(String[] args) throws IOException, OQLException {
+  /*  public static void main(String[] args) throws IOException, OQLException {
         if (args.length != 2) {
             System.err.println("Expected two arguments: path to a heap file and path to an OQL script file.");
         }
@@ -58,5 +47,7 @@ public class ScriptRunner {
         }
         return false;
     };
+
+   */
 
 }

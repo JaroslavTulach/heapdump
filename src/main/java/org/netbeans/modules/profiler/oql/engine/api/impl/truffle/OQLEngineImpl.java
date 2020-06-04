@@ -1,31 +1,51 @@
 package org.netbeans.modules.profiler.oql.engine.api.impl.truffle;
 
-import com.oracle.truffle.heap.HeapLanguage;
-import com.oracle.truffle.heap.HeapUtils;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotAccess;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.io.ByteSequence;
 import org.netbeans.modules.profiler.oql.engine.api.OQLEngine;
 import org.netbeans.modules.profiler.oql.engine.api.OQLException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.StringTokenizer;
 
 public class OQLEngineImpl {
 
     private final Context ctx;
 
+    private static ByteSequence bytesOf(File heapFile) throws IOException {
+        long length = heapFile.length();
+        try (RandomAccessFile file = new RandomAccessFile(heapFile, "r")) {
+            MappedByteBuffer out = file.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, length);
+            return new ByteSequence() {
+                @Override
+                public int length() {
+                    return (int) heapFile.length();
+                }
+
+                @Override
+                public byte byteAt(int index) {
+                    return out.get(index);
+                }
+            };
+        }
+    }
+
     public OQLEngineImpl(File heapFile) throws IOException {
         this.ctx = Context.newBuilder().allowAllAccess(true).allowPolyglotAccess(PolyglotAccess.ALL).build();
         ctx.initialize("heap");
         ctx.initialize("js");
 
-        ctx.getBindings("heap").getMember(HeapLanguage.Globals.SET_SCRIPT_LANGUAGE).execute("js");
-        ctx.getBindings("heap").getMember(HeapLanguage.Globals.BIND_GLOBAL_SYMBOLS).execute(ctx.getBindings("js"));
+        ctx.getBindings("heap").getMember("setScriptLanguage").execute("js");
+        ctx.getBindings("heap").getMember("bindGlobalSymbols").execute(ctx.getBindings("js"));
 
-        Source heapSrc = Source.newBuilder("heap", HeapUtils.bytesOf(heapFile), heapFile.getName())
+        Source heapSrc = Source.newBuilder("heap", bytesOf(heapFile), heapFile.getName())
                 .uri(heapFile.toURI())
                 .mimeType("application/x-netbeans-profiler-hprof").build();
         Value heap = this.ctx.eval(heapSrc);

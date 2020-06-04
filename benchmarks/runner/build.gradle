@@ -1,9 +1,35 @@
 plugins {
     id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'truffle'
 }
+
+sourceSets {
+    jmh {
+        java.srcDirs = ['src/jmh/java']
+        resources.srcDirs = ['src/jmh/resources']
+        compileClasspath += sourceSets.main.runtimeClasspath
+    }
+}
+
+task jmh(type: JavaExec, dependsOn: jmhClasses) {
+    main = 'org.openjdk.jmh.Main'
+    classpath = sourceSets.jmh.compileClasspath + sourceSets.jmh.runtimeClasspath
+    jvmArgs = benchmarkJvmArgs()
+}
+
+classes.finalizedBy(jmhClasses)
 
 repositories {
     jcenter()
+}
+
+shadowJar {
+    mergeServiceFiles()
+    from sourceSets.jmh.output
+    manifest {
+        attributes 'Main-Class': 'org.openjdk.jmh.Main'
+    }
 }
 
 ext.benchHeap = "$projectDir/../dumps/tumor_cell.hprof"
@@ -12,13 +38,12 @@ dependencies {
     implementation project(":")
     implementation 'org.netbeans.modules:org-netbeans-modules-profiler-oql:RELEASE113'
 
-    // Run fast javascript on JDK11+
-    implementation "org.graalvm.js:js:$graalVersion"
-    // necessary to integrate with legacy ScriptEngine based implementation
-    implementation "org.graalvm.js:js-scriptengine:$graalVersion"
+    truffleLanguage project(":heap")
 
-    graalCompiler "org.graalvm.compiler:compiler:$graalVersion"
-    truffle project(":")
+    implementation 'org.openjdk.jmh:jmh-core:1.21'
+    annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+    jmhImplementation 'org.openjdk.jmh:jmh-core:1.21'
+    jmhAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
 }
 
 task bench(type: JavaExec) { task ->
@@ -60,37 +85,10 @@ Iterable<String> benchmarkJvmArgs() {
     List<String> args = new ArrayList<>()
     // Forward benchmark type to the runner.
     args.add('-Dengine='+System.getProperty("engine", "truffle"))
-    // Add included custom truffle language files to the class path.
-    args.add("-Dtruffle.class.path.append=$truffleDir/heap-language.jar:$truffleDir/org-netbeans-lib-profiler-RELEASE113.jar:$truffleDir/org-netbeans-modules-profiler-oql-RELEASE113.jar")
     // If IGV is enabled, instruct Graal to dump compilation graphs.
     if (System.getProperty("igv", "off") == "on") {
         args.add("-Dgraal.Dump=:1")
         args.add("-Dgraal.PrintGraph=Network")
     }
-    // If graal is enabled on hotspot JDK (>=11), we have to add it as a special module.
-    if (System.getProperty("graal", "on") == "on" && JavaVersion.current() >= JavaVersion.VERSION_11) {
-        args.add('-XX:+UnlockExperimentalVMOptions')
-        args.add('-XX:+EnableJVMCI')
-        args.add("--module-path=$compilerDir")
-        args.add("--upgrade-module-path=$compilerDir/compiler-${graalVersion}.jar")
-    }
     return args
 }
-
-/* Copy Graal runtime compiler .jar files to $compilerDir. */
-task copyGraalCompiler(type: Copy) {
-    into compilerDir
-    from configurations.getByName('graalCompiler').files
-}
-
-/* Copy heap language runtime classes to $heapLanguageDir */
-task copyTruffleLanguages(type: Copy) {
-    into truffleDir
-    from configurations.getByName('truffle').files
-}
-
-/* Make sure dependencies are available when doing anything. */
-// (note that compileJava actually does not need them, but all other tasks that
-// need them depend on compileJava, so this is a reasonable trade-off)
-compileJava.dependsOn(copyGraalCompiler)
-compileJava.dependsOn(copyTruffleLanguages)

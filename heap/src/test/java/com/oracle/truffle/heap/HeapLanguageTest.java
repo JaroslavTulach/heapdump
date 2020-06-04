@@ -22,7 +22,7 @@ public abstract class HeapLanguageTest {
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.SET_SCRIPT_LANGUAGE).execute("js");
         ctx.getBindings("heap").getMember(HeapLanguage.Globals.BIND_GLOBAL_SYMBOLS).execute(ctx.getBindings("js"));
 
-        URL url = getClass().getClassLoader().getResource("org/netbeans/modules/profiler/oql/engine/api/impl/truffle/small_heap.bin");
+        URL url = getClass().getResource("/com/oracle/truffle/heap/small_heap.bin");
         File heapFile = new File(url.toURI());
         Source heapSrc = Source.newBuilder("heap", HeapUtils.bytesOf(heapFile), heapFile.getName())
                 .uri(heapFile.toURI())

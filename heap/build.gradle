@@ -1,0 +1,16 @@
+plugins {
+    id 'java-library'
+    id 'jacoco'
+    id 'truffle-language'
+}
+
+dependencies {
+    implementation "org.graalvm.truffle:truffle-api:$graalVersion"
+    // TODO: This brings a ton of useless dependencies - only depend on lib-profiler and api-annotations
+    implementation "org.netbeans.modules:org-netbeans-modules-profiler-oql:$libProfilerVersion"
+
+    annotationProcessor "org.graalvm.truffle:truffle-dsl-processor:$graalVersion"
+
+    testImplementation "org.graalvm.js:js:$graalVersion"
+    testImplementation "junit:junit:$junitVersion"
+}
