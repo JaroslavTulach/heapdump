@@ -4,8 +4,8 @@
 */
 var count = 0;
 heap.forEachObject(function (it) {
-    if (it.clazz.name.startsWith('benchmark.problem')) {
+    if (it.clazz.name.startsWith('java.lang')) {
         count += 1;
     }
 });
-print("Counted instances: "+count);
+count

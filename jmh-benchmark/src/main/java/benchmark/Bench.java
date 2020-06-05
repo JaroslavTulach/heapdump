@@ -8,8 +8,6 @@ import org.openjdk.jmh.annotations.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -24,7 +22,8 @@ public class Bench {
                 "02_count_objects_with_package_via_callback.js",
                 "03_count_objects_with_package_via_method_callback.js",
                 "04_count_objects_with_package_via_method_string.js",
-                "05_complex_where_clause_with_method_callback.js",
+                // 05 disabled for now because it is invalid on small_heap.bin - TODO: make a better heap!
+                //"05_complex_where_clause_with_method_callback.js",
         })
         public String scriptFile;
 
@@ -37,7 +36,7 @@ public class Bench {
         public OQLEngine oldEngine;
 
         @Setup(Level.Trial)
-        public void setUp() throws IOException, URISyntaxException {
+        public void setUp() throws IOException {
             File heapFile = copyResourceAsTempFile("/"+this.heapFile);
             this.engine = new OQLEngineImpl(heapFile);
             this.oldEngine = new OQLEngine(HeapFactory.createHeap(heapFile));

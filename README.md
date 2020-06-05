@@ -7,9 +7,25 @@ To tun tests, execute:
 ./gradlew check
 ```
 
-Producing coverage reports is possible using `./gradlew jacocoTestReport` (Only on Hotspot JDKs though).
+Producing coverage reports is possible using `./gradlew jacocoTestReport`.
 
 ## Benchmarks
+
+### JMH Benchmarks
+
+To run a selected set of benchmarks using JMH, execute:
+
+```bash
+./gradlew :jmh-benchmark:jmh
+```
+
+If you wish to generate a runnable JMH jar with all benchmarks, you can do so using:
+
+```bash
+./gradlew :jmh-benchmark:shadowJar
+```
+
+which will create the jar in `./jmh-benchmark/build/libs/jmh-benchmark-all.jar`.
 
 ### Benchmark heap dump
 
