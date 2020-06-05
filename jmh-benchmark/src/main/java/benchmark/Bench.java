@@ -19,7 +19,13 @@ public class Bench {
     @State(Scope.Thread)
     public static class Engine {
 
-        @Param({ "01_count_objects_via_callback.js" })
+        @Param({
+                "01_count_objects_via_callback.js",
+                "02_count_objects_with_package_via_callback.js",
+                "03_count_objects_with_package_via_method_callback.js",
+                "04_count_objects_with_package_via_method_string.js",
+                "05_complex_where_clause_with_method_callback.js",
+        })
         public String scriptFile;
 
         @Param({ "small_heap.bin" })
