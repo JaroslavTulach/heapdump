@@ -14,3 +14,4 @@ include 'benchmarks:runner'
 
 include 'heap'
 include 'oql-engine'
+include 'jmh-benchmark'
