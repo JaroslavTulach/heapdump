@@ -1,0 +1,20 @@
+include "common.hocon"
+
+heapLanguageCommon: {
+  timelimit : "20:00"
+}
+
+gateLite : ${heapLanguageCommon} {
+  run : [
+    ["./gradlew", ":jmh-benchmark:shadowJar"],
+    ["ls", "-l", "./jmh-benchmark/build/libs/jmh-benchmark-all.jar" ],
+    ["mx", "--dy", "/compiler", "benchmark", "--ignore-suite-commit-info", "heap-language", "jmh-jar", "--", "--jvm", "server", "--jvm-config", "graal-core", "--jmh-jar=./jmh-benchmark/build/libs/jmh-benchmark-all.jar", "--jmh-name=heap-language", "--" ],
+  ]
+}
+
+builds += [
+  ${linux-amd64} ${java8} ${gateLite} {
+    targets : [ gate ],
+    name: "gate-heap-language-linux-lite-8"
+  }
+]
