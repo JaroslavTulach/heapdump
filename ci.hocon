@@ -18,6 +18,6 @@ gateLite : ${heapLanguageCommon} {
 builds += [
   ${linux-amd64} ${java8} ${gateLite} {
     targets : [ gate ],
-    name: "gate-heap-language-linux-lite-8"
+    name: "bench-heap-language-linux-lite-8"
   }
 ]
