@@ -1,0 +1,96 @@
+# labsjdk* are JDKs based on OracleJDK binaries
+# openjdk* are JDKs based on OpenJDK binaries
+jdk-downloads: {
+    "oraclejdk8":      {"name": "oraclejdk", "version": "8u251+08-jvmci-20.1-b02", "platformspecific": true },
+    "openjdk8":        {"name": "openjdk",   "version": "8u252+09-jvmci-20.1-b02", "platformspecific": true },
+    "oraclejdk8Debug": {"name": "oraclejdk", "version": "8u251+08-jvmci-20.1-b02-fastdebug", "platformspecific": true },
+    "oraclejdk11":     {"name": "oraclejdk", "version": "11.0.6+8", "platformspecific": true },
+    "openjdk11":       {"name": "openjdk",   "version": "11.0.3+7", "platformspecific": true },
+    "labsjdk-ce-11":   {"name": "labsjdk",   "version": "ce-11.0.7+10-jvmci-20.1-b02", "platformspecific": true },
+    "labsjdk-ee-11":   {"name": "labsjdk",   "version": "ee-11.0.7+8-jvmci-20.1-b02", "platformspecific": true }
+}
+
+# This must always point to HEAD in the master branch but can be used to point
+# to another branch/commit in a Graal PR when mx changes are required for the PR.
+mx : {
+  packages : {
+    mx: "HEAD"
+  }
+}
+
+igv_testparams : [
+]
+
+common : ${mx} {
+  timelimit : "30:00"
+  packages : {
+    "apache/ant" : ">=1.9.4"
+  }
+  catch_files : [
+    "Graal diagnostic output saved in (?P<filename>.+\.zip)"
+  ]
+
+  packages : {
+    "pip:logilab-common": "==1.4.4", # forces installation of python2 compliant version of logilab before astroid
+    "pip:astroid": "==1.1.0",
+    "pip:pylint" : "==1.1.0"
+  }
+}
+
+linux : ${common} {
+  packages : {
+    git : ">=1.8.3"
+    mercurial : ">=2.2"
+  }
+}
+
+solaris : ${common} {
+  packages : {
+    git : ">=1.8.3"
+    mercurial : ">=2.2"
+  }
+}
+
+darwin : ${common} {
+  packages : {
+    # Brew does not support versions
+    mercurial : ""
+  }
+  environment : {
+    PATH : "/usr/local/bin:$PATH"
+  }
+}
+
+linux-amd64 : ${linux} {
+  capabilities : [linux, amd64]
+}
+
+darwin-amd64 : ${darwin} {
+  capabilities : [darwin, amd64]
+}
+
+solaris-sparcv9 : ${solaris} {
+  capabilities : [solaris, sparcv9]
+}
+
+java8 : {
+  downloads : {
+    JAVA_HOME : ${jdk-downloads.openjdk8}
+  }
+}
+
+eclipse : {
+  downloads : {
+    ECLIPSE : {name: eclipse, version: "4.5.2", platformspecific: true}
+  }
+  environment : {
+    ECLIPSE_EXE : "$ECLIPSE/eclipse"
+  }
+}
+
+jdt : {
+  downloads : {
+    JDT : {name: ecj, version: "4.5.1", platformspecific: false}
+  }
+}
+
