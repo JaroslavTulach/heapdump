@@ -13,11 +13,14 @@ gateLite : ${heapLanguageCommon} {
   run : [
     ["mx", "benchmark", "--ignore-suite-commit-info", "heap-language", "jmh-jar", "--", "--jvm", "server", "--jvm-config", "graal-core", "--jmh-jar=./jmh-benchmark/build/libs/jmh-benchmark-all.jar", "--jmh-name=heap-language", "--" ],
   ]
+  teardown : [
+    ["bench-uploader.py", "bench-results.json"]
+  ]
 }
 
 builds += [
   ${linux-amd64} ${java8} ${gateLite} {
-    targets : [ gate ],
+    targets : [ bench ],
     name: "bench-heap-language-linux-lite-8"
   }
 ]
