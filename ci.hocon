@@ -5,9 +5,12 @@ heapLanguageCommon: {
 }
 
 gateLite : ${heapLanguageCommon} {
-  run : [
+  setup : [
     ["./gradlew", ":jmh-benchmark:shadowJar"],
     ["ls", "-l", "./jmh-benchmark/build/libs/jmh-benchmark-all.jar" ],
+    ["mx", "build" ],
+  ]
+  run : [
     ["mx", "benchmark", "--ignore-suite-commit-info", "heap-language", "jmh-jar", "--", "--jvm", "server", "--jvm-config", "graal-core", "--jmh-jar=./jmh-benchmark/build/libs/jmh-benchmark-all.jar", "--jmh-name=heap-language", "--" ],
   ]
 }
