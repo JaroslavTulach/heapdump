@@ -7,7 +7,9 @@ import org.netbeans.modules.profiler.oql.engine.api.impl.truffle.OQLEngineImpl;
 import org.openjdk.jmh.annotations.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -24,6 +26,7 @@ public class Bench {
                 "04_count_objects_with_package_via_method_string.js",
                 // 05 disabled for now because it is invalid on small_heap.bin - TODO: make a better heap!
                 //"05_complex_where_clause_with_method_callback.js",
+                "06_count_big_int_array.js"
         })
         public String scriptFile;
 
@@ -46,7 +49,11 @@ public class Bench {
 
         private File copyResourceAsTempFile(String path) throws IOException {
             Path temp = Files.createTempFile("heap_", ".hprof");
-            Files.copy(getClass().getResourceAsStream(path), temp, StandardCopyOption.REPLACE_EXISTING);
+            final InputStream is = getClass().getResourceAsStream(path);
+            if (is == null) {
+                throw new FileNotFoundException("Cannot find resource " + path);
+            }
+            Files.copy(is, temp, StandardCopyOption.REPLACE_EXISTING);
             return temp.toFile();
         }
 
