@@ -41,8 +41,6 @@
     </dependencies>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
         <mainClass>org.apidesign.demo.heapdump.Main</mainClass>
         <dump>none</dump>
         <heap>dump.hprof</heap>
@@ -68,6 +66,28 @@
                         <argument>${heap}</argument>
                         <argument>${lang}</argument>
                     </arguments>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.frgaal</groupId>
+                        <artifactId>compiler-maven-plugin</artifactId>
+                        <version>14.0.2</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <compilerId>frgaal</compilerId>
+                    <source>14</source>
+                    <target>1.8</target>
+                    <testTarget>1.8</testTarget>
+                    <compilerArgs>
+                        <arg>-Xlint:deprecation</arg>
+                        <arg>--enable-safe-preview</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

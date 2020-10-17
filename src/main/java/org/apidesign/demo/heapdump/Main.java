@@ -61,16 +61,16 @@ public class Main {
         final OQLEngine eng = new OQLEngine(heap);
         for (int i = 1; i <= count; i++) {
             long now = System.currentTimeMillis();
-            eng.executeQuery(
-                "var arr = [];\n" +
-                "heap.forEachObject(function(o) {\n" +
-                "  if (o.length > 255) {\n" +
-                "    arr.push(o);\n" +
-                "  }\n" +
-                "}, 'int[]')\n" +
-                "print('Found ' + arr.length + ' long int arrays');" +
-                "arr.length"
-                , (arrLength) -> {
+            eng.executeQuery("""
+                var arr = [];
+                heap.forEachObject(function(o) {
+                    if (o.length > 255) {
+                        arr.push(o);
+                    }
+                }, 'int[]')
+                print('Found ' + arr.length + ' long int arrays');
+                arr.length
+                """, (arrLength) -> {
                     res[0] = (int) arrLength;
                     return true;
                 }
@@ -136,40 +136,39 @@ public class Main {
         switch (language) {
             case "ruby":
                 return new String[] {
-                    "ruby", ""
-                    + "def hugeArrays(heap)\n"
-                    + "  arr = []\n"
-                    + "  heap.forEachObject(-> (o) { if o.size > 255 then arr.push(o); end }, 'int[]')\n"
-                    + "  return arr.size\n"
-                    + "end\n"
-                    + "method(:hugeArrays)\n",
-                    "fn.js"
+                    "ruby", """
+                    def hugeArrays(heap)
+                      arr = []
+                      heap.forEachObject(-> (o) { if o.size > 255 then arr.push(o); end }, 'int[]')
+                      return arr.size
+                    end
+                    method(:hugeArrays)
+                    """, "fn.js"
                 };
             case "js":
                 return new String[] {
-                    "js",
-                    "(function(heap) {\n"
-                    + "var arr = [];\n"
-                    + "heap.forEachObject(function(o) {\n"
-                    + "  if (o.length > 255) {\n"
-                    + "    arr.push(o);\n"
-                    + "  }\n"
-                    + "}, 'int[]')\n"
-                    + "return arr.length;"
-                    + "})",
-                    "fn.js"
+                    "js", """
+                    (function(heap) {
+                        var arr = [];
+                        heap.forEachObject(function(o) {
+                          if (o.length > 255) {
+                            arr.push(o);
+                          }
+                        }, 'int[]');
+                        return arr.length;
+                    })
+                    """, "fn.js"
                 };
             case "python":
                 return new String[] {
-                    "python",
-                    "def hugeArrays(heap):\n"
-                    + "  arr = []\n"
-                    + "  heap.forEachObject(lambda o: arr.append(o) if len(o) > 255 else None, 'int[]')\n"
-                    + "  return len(arr)\n"
-                    + "\n"
-                    + "hugeArrays\n"
-                    + "",
-                    "fn.py"
+                    "python", """
+                    def hugeArrays(heap):
+                      arr = []
+                      heap.forEachObject(lambda o: arr.append(o) if len(o) > 255 else None, 'int[]')
+                      return len(arr)
+
+                    hugeArrays
+                    """, "fn.py"
                 };
             default:
                 throw new IllegalStateException("Unknown language: " + language);
