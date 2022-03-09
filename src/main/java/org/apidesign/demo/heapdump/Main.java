@@ -89,7 +89,7 @@ public class Main {
         }
 
         System.err.println("Parsing the " + heapFile);
-        Source heapSrc = Source.newBuilder("heap", bytesOf(heapFile), heapFile.getName())
+        Source heapSrc = Source.newBuilder("demoheap", bytesOf(heapFile), heapFile.getName())
                 .uri(heapFile.toURI())
                 .mimeType("application/x-netbeans-profiler-hprof").build();
         Value heap = ctx.eval(heapSrc);

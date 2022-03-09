@@ -48,18 +48,13 @@ import org.netbeans.lib.profiler.heap.PrimitiveArrayInstance;
 
 @TruffleLanguage.Registration(
     byteMimeTypes = "application/x-netbeans-profiler-hprof",
-    name = "heap",
-    id = "heap"
+    name = "demoheap",
+    id = "demoheap"
 )
 public class HeapLanguage extends TruffleLanguage<Data> {
     @Override
     protected Data createContext(Env env) {
         return new Data();
-    }
-
-    @Override
-    protected boolean isObjectOfLanguage(Object object) {
-        return false;
     }
 
     @Override
@@ -184,7 +179,7 @@ final class HeapObject implements TruffleObject {
 
                 @Override
                 public Object execute(VirtualFrame frame) {
-                    loop.executeLoop(frame);
+                    loop.execute(frame);
                     return null;
                 }
             }

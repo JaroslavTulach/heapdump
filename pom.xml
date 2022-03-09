@@ -9,7 +9,7 @@
         <dependency>
             <groupId>org.netbeans.modules</groupId>
             <artifactId>org-netbeans-modules-profiler-oql</artifactId>
-            <version>RELEASE111</version>
+            <version>RELEASE125</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -46,7 +46,7 @@
         <heap>dump.hprof</heap>
         <debug>-Dnone</debug>
         <lang>js</lang>
-        <graalvm.version>19.1.0</graalvm.version>
+        <graalvm.version>21.3.1</graalvm.version>
     </properties>
     <build>
         <plugins>
@@ -76,20 +76,35 @@
                     <dependency>
                         <groupId>org.frgaal</groupId>
                         <artifactId>compiler-maven-plugin</artifactId>
-                        <version>14.0.2</version>
+                        <version>17.0.0</version>
                     </dependency>
                 </dependencies>
                 <configuration>
                     <compilerId>frgaal</compilerId>
-                    <source>14</source>
+                    <source>17</source>
                     <target>1.8</target>
                     <testTarget>1.8</testTarget>
                     <compilerArgs>
                         <arg>-Xlint:deprecation</arg>
-                        <arg>--enable-safe-preview</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <activation>
+                <jdk>[15,)</jdk>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.openjdk.nashorn</groupId>
+                    <artifactId>nashorn-core</artifactId>
+                    <version>15.3</version>
+                    <scope>test</scope>
+                    <type>jar</type>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
