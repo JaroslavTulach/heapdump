@@ -104,8 +104,20 @@ Fiveteen times faster! Good result for a simple replace of one JDK by another, r
 [Apache NetBeans](http://netbeans.apache.org) gives you useful libraries.
 [GraalVM](http://graalvm.org) makes them run fast!
 
-# To Be Continued...
+# Designing Polyglot APIs
 
 That is the plot. Now the we can focus on the
 main question of [my course](https://d3s.mff.cuni.cz/teaching/practical_dynamic_compilation):
 Can we make it even faster?
+
+[![Designing APIs for Polyglot World](http://img.youtube.com/vi/A9X3lxUQc5M/0.jpg)](http://www.youtube.com/watch?v=A9X3lxUQc5M "Designing APIs for Polyglot World")
+
+Important highlights from the video:
+* [5:30](https://youtu.be/A9X3lxUQc5M?t=343) - how to take **your data structure** like DB and **expose it to polyglot** languages **effectively**
+* [6:10](https://youtu.be/A9X3lxUQc5M?t=369) - **typically** people write their API in C and add **bindings** to other languages “
+* [26:35](https://youtu.be/A9X3lxUQc5M?t=1595) - how **polyglot** works **in Truffle** and it’s **compiler**
+* [36:45](https://youtu.be/A9X3lxUQc5M?t=2204) - _“all you need is …. TruffleObject”_
+* [38:10](https://youtu.be/A9X3lxUQc5M?t=2282) - exploring the **effective compilation** via IGV
+
+There is a [HeapLanguage](https://github.com/jaroslavtulach/heapdump/compare/HeapLanguage) branch in this repository holding all
+the code used by the [Designing APIs for Polyglot World](http://www.youtube.com/watch?v=A9X3lxUQc5M) presentation.
